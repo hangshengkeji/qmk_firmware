@@ -1,16 +1,16 @@
-# Gaming Keyboard
+# k717
 
 * Keyboard Maintainer: [yangzheng20003 ](https://github.com/yangzheng20003 )
-* Hardware Supported: Gaming Keyboard
+* Hardware Supported: k717
 * Hardware Availability: [ET](https://www.redragonzone.com/)
 
 Make example for this keyboard (after setting up your build environment):
 
-    make et/gaming_keyboard:default
+    make et/k717:default
         
 Flashing example for this keyboard:
 
-    make et/gaming_keyboard:default:flash
+    make et/k717:default:flash
 
 To reset the board into bootloader mode, do one of the following:
 

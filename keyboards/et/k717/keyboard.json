@@ -1,21 +1,53 @@
 {
-    "manufacturer": "HS",
-    "keyboard_name": "k717",
+    "manufacturer": "ET",
+    "keyboard_name": "gaming_keyboard",
     "maintainer": "yangzheng20003",
     "bootloader": "wb32-dfu",
+    "bootmagic": {
+        "matrix": [0, 0]
+    },
+    "debounce": 1,
     "diode_direction": "ROW2COL",
     "eeprom": {
+        "driver": "wear_leveling",
         "wear_leveling": {
             "backing_size": 4096,
             "driver": "spi_flash"
         }
     },
     "features": {
-        "bootmagic": true,
+        "command": false,
+        "console": false,
         "extrakey": true,
         "mousekey": true,
         "nkro": true,
-        "rgb_matrix": true
+        "rgb_matrix": true,
+        "deferred_exec": true,
+        "rgblight": false,
+        "encoder": false
+    },
+    "keycodes": [
+        {
+            "key": "KC_BT1"
+        },
+        {
+            "key": "KC_BT2"
+        },
+        {
+            "key": "KC_BT3"
+        },
+        {
+            "key": "KC_2G4"
+        },
+        {
+            "key": "KC_TEST"
+        },
+        {
+            "key": "KC_SENS"
+        }
+    ],
+    "dynamic_keymap": {
+        "layer_count": 4
     },
     "matrix_pins": {
         "cols": ["C0", "C1", "C2", "C3", "A6", "B10", "B11", "B12", "B13", "B14", "B15", "C6", "C7", "C8"],
@@ -55,6 +87,7 @@
             "rainbow_moving_chevron": true,
             "rainbow_pinwheels": true,
             "raindrops": true,
+            "solid_color": true,
             "solid_multisplash": true,
             "solid_reactive": true,
             "solid_reactive_cross": true,
@@ -134,16 +167,27 @@
             {"matrix": [4, 11], "x": 187, "y": 64, "flags": 4},
             {"matrix": [4, 12], "x": 204, "y": 64, "flags": 4},
             {"matrix": [4, 13], "x": 221, "y": 64, "flags": 4}
-        ]
+        ],
+        "max_brightness": 200,
+        "val_steps": 40,
+        "speed_steps": 51,
+        "default": {
+            "animation": "cycle_left_right",
+            "val" :153,
+            "speed" :204
+        },
+        "sleep": true
     },
-    "url": "",
+    "tap_keycode_delay": 10,
+    "url": "https://www.redragonzone.com/",
     "usb": {
-        "device_version": "0.0.1",
+        "device_version": "0.3.0",
         "force_nkro": true,
         "pid": "0xE470",
         "suspend_wakeup_delay": 1000,
         "vid": "0x342D"
     },
+    
     "layouts": {
         "LAYOUT": {
             "layout": [

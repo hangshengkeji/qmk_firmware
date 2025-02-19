@@ -235,10 +235,10 @@ bool rgbrec_register_record(uint16_t keycode, keyrecord_t *record) {
 }
 
 void eeconfig_init_user_datablock(void) {
-    uint32_t addr = 0;
+    // uint32_t addr = 0;
 
-    addr = (uint32_t)(RGBREC_EECONFIG_ADDR);
-    eeprom_update_block(rgbrec_default_effects, (void *)addr, sizeof(rgbrec_default_effects));
+    // addr = (uint32_t)(RGBREC_EECONFIG_ADDR);
+    // eeprom_update_block(rgbrec_default_effects, (void *)addr, sizeof(rgbrec_default_effects));
 }
 
 uint8_t find_index(void) {

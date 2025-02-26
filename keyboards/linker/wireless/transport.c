@@ -76,12 +76,12 @@ void set_transport(transport_t new_transport) {
 
         switch (transport) {
             case TRANSPORT_USB: {
-                usb_transport_enable(true);
                 wls_transport_enable(false);
+                usb_transport_enable(true);
             } break;
             case TRANSPORT_WLS: {
-                wls_transport_enable(true);
                 usb_transport_enable(false);
+                wls_transport_enable(true);
             } break;
             default:
                 break;
@@ -161,7 +161,7 @@ bool process_action_kb(keyrecord_t *record) {
     if (get_transport() == TRANSPORT_USB){
         usb_remote_host();
     }
-    
+
     return true;
 }
 #endif

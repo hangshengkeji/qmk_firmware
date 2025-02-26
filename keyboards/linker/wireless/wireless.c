@@ -191,7 +191,11 @@ void wireless_devs_change(uint8_t old_devs, uint8_t new_devs, bool reset) {
     bool changed = (old_devs == DEVS_USB) ? (new_devs != DEVS_USB) : (new_devs == DEVS_USB);
 
     if (changed) {
-        set_transport((new_devs != DEVS_USB) ? TRANSPORT_WLS : TRANSPORT_USB);
+        if (new_devs == DEVS_USB) set_transport(TRANSPORT_USB);
+        else if (*md_getp_state() == MD_STATE_CONNECTED) {
+            //set_transport((new_devs != DEVS_USB) ? TRANSPORT_WLS : TRANSPORT_USB);
+            set_transport(TRANSPORT_WLS);
+        }
     }
 
     if ((wls_devs != new_devs) || reset) {

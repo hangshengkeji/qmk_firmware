@@ -231,8 +231,13 @@ void palcallback_cb(uint8_t line) {
 void lpwr_stop_hook_pre(void) {
 
     gpio_write_pin_low(LED_POWER_EN_PIN);
-    gpio_write_pin_low(A9);
-    gpio_write_pin_low(B9);
+ 
+    writePin(LED_NUM_LOCK_PIN,1);
+    writePin(LED_SCROLL_LOCK_PIN,1);
+    writePin(LED_CAPS_LOCK_PIN,1);
+    writePin(LED_WIN,1);
+    writePin(LED_POV,1);
+
     state = false;
     if (lower_sleep) {
         md_send_devctrl(MD_SND_CMD_DEVCTRL_USB);

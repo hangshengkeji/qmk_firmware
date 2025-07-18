@@ -1428,10 +1428,11 @@ void bat_indicators(void) {
                 lpwr_set_timeout_manual(true);
             }
         }
+        writePin(LED_POV, 1);
     } else {
         // rgb_matrix_set_color(HS_MATRIX_BLINK_INDEX_BAT, 0x00, 0x00, 0x00);
         battery_process_time = 0;
-    
+        writePin(LED_POV, 1);
     }
 }
 

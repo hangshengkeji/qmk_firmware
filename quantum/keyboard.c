@@ -527,13 +527,14 @@ static inline void generate_tick_event(void) {
  * @return true Matrix did change
  * @return false Matrix didn't change
  */
+matrix_row_t matrix_previous[MATRIX_ROWS];
 static bool matrix_task(void) {
     if (!matrix_can_read()) {
         generate_tick_event();
         return false;
     }
 
-    static matrix_row_t matrix_previous[MATRIX_ROWS];
+    // static matrix_row_t matrix_previous[MATRIX_ROWS];
 
     matrix_scan();
     bool matrix_changed = false;

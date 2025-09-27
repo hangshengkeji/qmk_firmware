@@ -1,0 +1,12 @@
+// Copyright 2024 Su (@isuua)
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#pragma once
+
+#define HAL_USE_SERIAL    TRUE
+#define HAL_USE_SPI       TRUE
+#define HAL_USE_GPT       TRUE
+#define HAL_USE_PWM       TRUE
+#define PAL_USE_CALLBACKS TRUE
+
+#include_next <halconf.h>

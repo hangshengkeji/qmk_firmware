@@ -49,6 +49,10 @@ static fast_timer_t        last_time;
 static bool                counters_need_update;
 static bool                cooked_changed;
 
+#ifdef HS_DEBOUNCE
+extern uint16_t hs_deb;
+#endif
+
 #    define DEBOUNCE_ELAPSED 0
 
 static void update_debounce_counters(uint8_t num_rows, uint8_t elapsed_time);
@@ -125,6 +129,16 @@ static void transfer_matrix_values(matrix_row_t raw[], matrix_row_t cooked[], ui
         matrix_row_t raw_row      = raw[row];
 
         // determine new value basd on debounce pointer + raw value
+#ifdef HS_DEBOUNCE
+        if (existing_row != raw_row) {
+            if (*debounce_pointer == DEBOUNCE_ELAPSED) {
+                *debounce_pointer = hs_deb;
+                cooked_changed |= cooked[row] ^ raw_row;
+                cooked[row]          = raw_row;
+                counters_need_update = true;
+            }
+        }
+#else
         if (existing_row != raw_row) {
             if (*debounce_pointer == DEBOUNCE_ELAPSED) {
                 *debounce_pointer = DEBOUNCE;
@@ -133,6 +147,7 @@ static void transfer_matrix_values(matrix_row_t raw[], matrix_row_t cooked[], ui
                 counters_need_update = true;
             }
         }
+#endif
         debounce_pointer++;
     }
 }

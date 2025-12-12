@@ -1,16 +1,16 @@
-# TH40
+# wecat4
 
 * Keyboard Maintainer: [sdk66](https://github.com/sdk66)
-* Hardware Supported: TH40
+* Hardware Supported: wecat4
 * Hardware Availability: [XXX](https://www.XXX.com)
 
 Make example for this keyboard (after setting up your build environment):
 
-    make leo/th40:default
+    make leo/wecat4:default
         
 Flashing example for this keyboard:
 
-    make leo/th40:default:flash
+    make leo/wecat4:default:flash
 
 To reset the board into bootloader mode, do one of the following:
 

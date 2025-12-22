@@ -14,10 +14,10 @@
 #define HS_RGB_INDICATOR_COUNT              99
 #define HS_RGB_BAT_COUNT                    1
 
-#define MD_BT1_NAME                         "GMK70-1"
-#define MD_BT2_NAME                         "GMK70-2"
-#define MD_BT3_NAME                         "GMK70-3"
-#define MD_DONGLE_PRODUCT                   "ZUOYA GMK70"
+#define MD_BT1_NAME                         "Split70-1"
+#define MD_BT2_NAME                         "Split70-2"
+#define MD_BT3_NAME                         "Split70-3"
+#define MD_DONGLE_PRODUCT                   "Epomaker Split70"
 
 /* Device Connection RGB Indicator Light Index And Color */
 #define HS_RGB_BLINK_INDEX_BT1              14

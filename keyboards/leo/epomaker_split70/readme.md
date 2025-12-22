@@ -1,16 +1,16 @@
-# ZUOYA GMK70
+# Epomaker Split70
 
 * Keyboard Maintainer: [yangzheng20003](https://github.com/yangzheng20003)
-* Hardware Supported: ZUOYA GMK70
-* Hardware Availability: ZUOYA GMK70
+* Hardware Supported: Epomaker Split70
+* Hardware Availability: Epomaker Split70
 
 Make example for this keyboard (after setting up your build environment):
 
-    make leo/zuoya_gmk70:default
+    make leo/epomaker_split70:default
         
 Flashing example for this keyboard:
 
-    make leo/zuoya_gmk70:default
+    make leo/epomaker_split70:default
 
 To reset the board into bootloader mode, do one of the following:
 

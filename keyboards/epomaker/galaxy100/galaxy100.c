@@ -3,6 +3,14 @@
 
 #include QMK_KEYBOARD_H
 #include "rgb_record/rgb_record.h"
+#include "wls/wls.h"
+
+#ifdef WIRELESS_ENABLE
+#    include "wireless.h"
+#    include "usb_main.h"
+#    include "lowpower.h"
+#    include "iprint.h"
+#endif
 
 typedef union {
     uint32_t raw;
@@ -33,7 +41,7 @@ enum layers {
     _MFL,
     _FBL,
 };
-
+bool temp,im_test_rate_flag;
 hs_rgb_indicator_t hs_rgb_indicators[HS_RGB_INDICATOR_COUNT];
 hs_rgb_indicator_t hs_rgb_bat[HS_RGB_BAT_COUNT];
 
@@ -104,6 +112,8 @@ void keyboard_post_init_kb(void) {
 #ifdef CONSOLE_ENABLE
     debug_enable = true;
 #endif
+    iprint_init();
+    wait_ms(3000);
 
     eeconfig_confinfo_init();
 
@@ -117,12 +127,12 @@ void keyboard_post_init_kb(void) {
     gpio_write_pin_high(HS_LED_BOOSTING_PIN);
 #endif
 
-#ifdef MM_BT_DEF_PIN
-    setPinInputHigh(MM_BT_DEF_PIN);
+#ifdef HS_BT_DEF_PIN
+    setPinInput(HS_BT_DEF_PIN);
 #endif
 
-#ifdef MM_2G4_DEF_PIN
-    setPinInputHigh(MM_2G4_DEF_PIN);
+#ifdef HS_2G4_DEF_PIN
+    setPinInput(HS_2G4_DEF_PIN);
 #endif
 
 #ifdef USB_POWER_EN_PIN
@@ -370,6 +380,12 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         return false;
     }
 
+#ifdef WIRELESS_ENABLE
+    if (process_record_wls(keycode, record) != true) {
+        return false;
+    }
+#endif
+    iprintf("keycode: 0x%04X %s\r\n", keycode, record->event.pressed ? "pressed" : "released");
     switch (keycode) {
         case QK_BOOT: {
             if (record->event.pressed) {
@@ -630,6 +646,79 @@ void rgb_matrix_wls_indicator_set(uint8_t index, RGB rgb, uint32_t interval, uin
     wls_rgb_indicator_rgb      = rgb;
 }
 
+void wireless_devs_change_kb(uint8_t old_devs, uint8_t new_devs, bool reset) {
+
+    wls_rgb_indicator_reset = reset;
+
+    if (confinfo.devs != wireless_get_current_devs()) {
+        confinfo.devs = wireless_get_current_devs();
+        if (confinfo.devs > 0 && confinfo.devs < 4) confinfo.last_btdevs = confinfo.devs;
+        eeconfig_confinfo_update(confinfo.raw);
+    }
+
+    if (!reset && (wireless_get_current_devs() == new_devs &&  *md_getp_state() == MD_STATE_CONNECTED)) return;
+
+    switch (new_devs) {
+        case DEVS_BT1: {
+            if (reset) {
+                rgb_matrix_wls_indicator_set(HS_RGB_BLINK_INDEX_BT1, (RGB){HS_LBACK_COLOR_BT1}, 200, 1);
+            } else {
+                rgb_matrix_wls_indicator_set(HS_RGB_BLINK_INDEX_BT1, (RGB){HS_PAIR_COLOR_BT1}, 500, 1);
+            }
+        } break;
+        case DEVS_BT2: {
+            if (reset) {
+                rgb_matrix_wls_indicator_set(HS_RGB_BLINK_INDEX_BT2, (RGB){HS_LBACK_COLOR_BT2}, 200, 1);
+            } else {
+                rgb_matrix_wls_indicator_set(HS_RGB_BLINK_INDEX_BT2, (RGB){HS_PAIR_COLOR_BT2}, 500, 1);
+            }
+        } break;
+        case DEVS_BT3: {
+            if (reset) {
+                rgb_matrix_wls_indicator_set(HS_RGB_BLINK_INDEX_BT3, (RGB){HS_LBACK_COLOR_BT3}, 200, 1);
+            } else {
+                rgb_matrix_wls_indicator_set(HS_RGB_BLINK_INDEX_BT3, (RGB){HS_PAIR_COLOR_BT3}, 500, 1);
+            }
+        } break;
+        case DEVS_BT4: {
+            if (reset) {
+                rgb_matrix_wls_indicator_set(41, (RGB){RGB_BLUE}, 200, 1);
+            } else {
+                rgb_matrix_wls_indicator_set(41, (RGB){RGB_BLUE}, 500, 1);
+            }
+        } break;
+        case DEVS_BT5: {
+            if (reset) {
+                rgb_matrix_wls_indicator_set(42, (RGB){RGB_BLUE}, 200, 1);
+            } else {
+                rgb_matrix_wls_indicator_set(42, (RGB){RGB_BLUE}, 500, 1);
+            }
+        } break;
+        case DEVS_2G4: {
+            if (reset) {
+                rgb_matrix_wls_indicator_set(HS_RGB_BLINK_INDEX_2G4, (RGB){HS_LBACK_COLOR_2G4}, 200, 1);
+            } else {
+                rgb_matrix_wls_indicator_set(HS_RGB_BLINK_INDEX_2G4, (RGB){HS_LBACK_COLOR_2G4}, 500, 1);
+            }
+        } break;
+        default:
+            break;
+    }
+}
+
+bool rgb_matrix_wls_indicator_cb(void) {
+
+    if (*md_getp_state() != MD_STATE_CONNECTED) {
+        if (!(wireless_get_current_devs() == DEVS_USB && USB_DRIVER.state == USB_ACTIVE)) wireless_devs_change_kb(wireless_get_current_devs(), wireless_get_current_devs(), wls_rgb_indicator_reset);
+        return true;
+    }
+
+    // refresh led
+    led_wakeup();
+
+    return false;
+}
+
 void rgb_matrix_wls_indicator(void) {
 
     if (wls_rgb_indicator_timer) {
@@ -650,7 +739,7 @@ void rgb_matrix_wls_indicator(void) {
         }
 
         if (wls_rgb_indicator_times % 2) {
-            rgb_matrix_set_color(wls_rgb_indicator_index, wls_rgb_indicator_rgb.r, wls_rgb_indicator_rgb.g, wls_rgb_indicator_rgb.b);
+            rgb_matrix_set_color(wls_rgb_indicator_index, wls_rgb_indicator_rgb.g, wls_rgb_indicator_rgb.r, wls_rgb_indicator_rgb.b);
         } else {
             rgb_matrix_set_color(wls_rgb_indicator_index, 0x00, 0x00, 0x00);
         }
@@ -815,6 +904,24 @@ bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
     else
         rgb_matrix_set_color(HS_RGB_INDEX_WIN_LOCK, RGB_BLACK);
 
+#ifdef WIRELESS_ENABLE
+    rgb_matrix_wls_indicator();
+
+    // if (enable_bat_indicators && !inqbat_flag && !rgbrec_is_started()) {
+    //     rgb_matrix_hs_bat();
+    //     bat_indicators();
+    //     bat_indicator_cnt = timer_read32();
+    // }
+
+    // if (!enable_bat_indicators) {
+    //     if (timer_elapsed32(bat_indicator_cnt) > 2000) {
+    //         enable_bat_indicators = true;
+    //         bat_indicator_cnt     = timer_read32();
+    //     }
+    // }
+
+#endif
+    
     rgb_matrix_hs_indicator();
 
     rgb_matrix_start_rec();

@@ -41,7 +41,7 @@ enum layers {
     _MFL,
     _FBL,
 };
-bool temp,im_test_rate_flag;
+// bool temp,im_test_rate_flag;
 hs_rgb_indicator_t hs_rgb_indicators[HS_RGB_INDICATOR_COUNT];
 hs_rgb_indicator_t hs_rgb_bat[HS_RGB_BAT_COUNT];
 
@@ -112,8 +112,6 @@ void keyboard_post_init_kb(void) {
 #ifdef CONSOLE_ENABLE
     debug_enable = true;
 #endif
-    iprint_init();
-    wait_ms(3000);
 
     eeconfig_confinfo_init();
 
@@ -373,7 +371,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     return true;
 }
-
+bool rk_bat_req_flag;
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 
     if (process_record_user(keycode, record) != true) {
@@ -385,8 +383,12 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         return false;
     }
 #endif
-    iprintf("keycode: 0x%04X %s\r\n", keycode, record->event.pressed ? "pressed" : "released");
+
     switch (keycode) {
+        case HS_BATQ: { 
+            rk_bat_req_flag = record->event.pressed;
+            return false;
+        } break;
         case QK_BOOT: {
             if (record->event.pressed) {
                 dprintf("into boot!!!\r\n");
@@ -746,6 +748,33 @@ void rgb_matrix_wls_indicator(void) {
     }
 }
 
+void rgb_matrix_hs_bat(void) {
+    for (int i = 0; i < HS_RGB_BAT_COUNT; i++) {
+        if (hs_rgb_bat[i].active) {
+            if (timer_elapsed32(hs_rgb_bat[i].timer) >= hs_rgb_bat[i].interval) {
+                hs_rgb_bat[i].timer = timer_read32();
+
+                if (hs_rgb_bat[i].times) {
+                    hs_rgb_bat[i].times--;
+                }
+
+                if (hs_rgb_bat[i].times <= 0) {
+                    hs_rgb_bat[i].active = false;
+                    hs_rgb_bat[i].timer  = 0x00;
+                }
+            }
+
+            if (hs_rgb_bat[i].times % 2) {
+                rgb_matrix_set_color(hs_rgb_bat[i].index, hs_rgb_bat[i].rgb.g, hs_rgb_bat[i].rgb.r, hs_rgb_bat[i].rgb.b);
+
+            } else {
+                rgb_matrix_set_color(hs_rgb_bat[i].index, 0x00, 0x00, 0x00);
+
+            }
+        }
+    }
+}
+
 void rgb_matrix_hs_bat_set(uint8_t index, RGB rgb, uint32_t interval, uint8_t times) {
     for (int i = 0; i < HS_RGB_BAT_COUNT; i++) {
         if (!hs_rgb_bat[i].active) {
@@ -757,6 +786,41 @@ void rgb_matrix_hs_bat_set(uint8_t index, RGB rgb, uint32_t interval, uint8_t ti
             hs_rgb_bat[i].rgb      = rgb;
             break;
         }
+    }
+}
+
+void bat_indicators(void) {
+    static uint32_t battery_process_time = 0;
+    if (charging_state && (bat_full_flag)) {
+        battery_process_time = 0;
+        // rgb_matrix_set_color(8, 0x00, 0xFF, 0x00);
+        // if (!led_chaning) rgb_matrix_set_color(HS_MATRIX_BLINK_INDEX_BAT, 0x00, 0x00, 0x00);
+    } else if (charging_state) {
+        
+        battery_process_time = 0;
+        // if (!led_status && rgb_matrix_get_val()) {
+            rgb_matrix_set_color(8, 0xFF, 0x00, 0x00);
+        // }
+    } else if (*md_getp_bat() <= 15) {
+       
+        // if (!led_status && rgb_matrix_get_val()) {
+            rgb_matrix_hs_bat_set(8, (RGB){0xFF, 0x00, 0x00}, 250, 1);
+        // }
+        if (*md_getp_bat() <= 0) {
+            if (!battery_process_time) {
+                battery_process_time = timer_read32();
+            }
+
+            if (battery_process_time && timer_elapsed32(battery_process_time) > 60000) {
+                battery_process_time = 0;
+                lower_sleep          = true;
+                md_send_devctrl(MD_SND_CMD_DEVCTRL_USB);
+                lpwr_set_timeout_manual(true);
+            }
+        }
+    } else {
+        // rgb_matrix_set_color(HS_MATRIX_BLINK_INDEX_BAT, 0x00, 0x00, 0x00);
+        battery_process_time = 0;
     }
 }
 
@@ -907,24 +971,42 @@ bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
 #ifdef WIRELESS_ENABLE
     rgb_matrix_wls_indicator();
 
-    // if (enable_bat_indicators && !inqbat_flag && !rgbrec_is_started()) {
-    //     rgb_matrix_hs_bat();
-    //     bat_indicators();
-    //     bat_indicator_cnt = timer_read32();
-    // }
+    if (enable_bat_indicators && !inqbat_flag) {
+        rgb_matrix_hs_bat();
+        bat_indicators();
+        bat_indicator_cnt = timer_read32();
+    }
 
-    // if (!enable_bat_indicators) {
-    //     if (timer_elapsed32(bat_indicator_cnt) > 2000) {
-    //         enable_bat_indicators = true;
-    //         bat_indicator_cnt     = timer_read32();
-    //     }
-    // }
+    if (!enable_bat_indicators) {
+        if (timer_elapsed32(bat_indicator_cnt) > 2000) {
+            enable_bat_indicators = true;
+            bat_indicator_cnt     = timer_read32();
+        }
+    }
 
 #endif
     
     rgb_matrix_hs_indicator();
 
     rgb_matrix_start_rec();
+
+    if (rk_bat_req_flag) {
+        rgb_matrix_set_color_all(0x00, 0x00, 0x00);
+        for (uint8_t i = 0; i < 10; i++) {
+            uint8_t mi_index[10] = RGB_MATRIX_BAT_INDEX_MAP;
+            if ((i < (*md_getp_bat() / 10)) || (i < 1)) {
+                if (*md_getp_bat() >= (50)) {
+                    rgb_matrix_set_color(mi_index[i], HS_BAT_REQ_LEVEL1_COLOR);
+                } else if (*md_getp_bat() >= (30)) {
+                    rgb_matrix_set_color(mi_index[i], HS_BAT_REQ_LEVEL2_COLOR);
+                } else {
+                    rgb_matrix_set_color(mi_index[i], HS_BAT_REQ_LEVEL3_COLOR);
+                }
+            } else {
+                rgb_matrix_set_color(mi_index[i], 0x00, 0x00, 0x00);
+            }
+        }
+    }
 
     return true;
 }

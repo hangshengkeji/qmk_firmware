@@ -63,6 +63,9 @@
             "key": "USE_PRO"
         },
         {
+            "key": "HS_BATQ"
+        },
+        {
             "key": "USE_TASK"
         }
     ],
@@ -230,8 +233,8 @@
         "speed_steps": 51,
         "default": {
             "animation": "cycle_left_right",
-            "val" :150,
-            "speed" :204
+            "val" :120,
+            "speed" :153
         },
         "sleep": true
     },

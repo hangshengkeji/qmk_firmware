@@ -140,6 +140,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef OS_DETECTION_ENABLE
 #    include "os_detection.h"
 #endif
+#ifdef LAYER_LOCK_ENABLE
+#    include "layer_lock.h"
+#endif
 
 static uint32_t last_input_modification_time = 0;
 uint32_t        last_input_activity_time(void) {
@@ -286,6 +289,21 @@ __attribute__((weak)) void keyboard_pre_init_kb(void) {
     keyboard_pre_init_user();
 }
 
+/** \brief keyboard_pre_init_modules
+ *
+ * FIXME: needs doc
+ */
+__attribute__((weak)) void keyboard_pre_init_modules(void) {}
+
+/** \brief keyboard_pre_init_quantum
+ *
+ * FIXME: needs doc
+ */
+void keyboard_pre_init_quantum(void) {
+    keyboard_pre_init_modules();
+    keyboard_pre_init_kb();
+}
+
 /** \brief keyboard_post_init_user
  *
  * FIXME: needs doc
@@ -300,6 +318,23 @@ __attribute__((weak)) void keyboard_post_init_user(void) {}
 
 __attribute__((weak)) void keyboard_post_init_kb(void) {
     keyboard_post_init_user();
+}
+
+/** \brief keyboard_post_init_modules
+ *
+ * FIXME: needs doc
+ */
+
+__attribute__((weak)) void keyboard_post_init_modules(void) {}
+
+/** \brief keyboard_post_init_quantum
+ *
+ * FIXME: needs doc
+ */
+
+void keyboard_post_init_quantum(void) {
+    keyboard_post_init_modules();
+    keyboard_post_init_kb();
 }
 
 /** \brief matrix_can_read
@@ -320,7 +355,7 @@ void keyboard_setup(void) {
     eeprom_driver_init();
 #endif
     matrix_setup();
-    keyboard_pre_init_kb();
+    keyboard_pre_init_quantum();
 }
 
 #ifndef SPLIT_KEYBOARD
@@ -352,6 +387,13 @@ __attribute__((weak)) bool should_process_keypress(void) {
     return is_keyboard_master();
 }
 
+/** \brief housekeeping_task_modules
+ *
+ * Codegen will override this if community modules are enabled.
+ * This is specific to keyboard-level functionality.
+ */
+__attribute__((weak)) void housekeeping_task_modules(void) {}
+
 /** \brief housekeeping_task_kb
  *
  * Override this function if you have a need to execute code for every keyboard main loop iteration.
@@ -371,6 +413,7 @@ __attribute__((weak)) void housekeeping_task_user(void) {}
  * Invokes hooks for executing code after QMK is done after each loop iteration.
  */
 void housekeeping_task(void) {
+    housekeeping_task_modules();
     housekeeping_task_kb();
     housekeeping_task_user();
 }
@@ -490,7 +533,7 @@ void keyboard_init(void) {
     debug_enable = true;
 #endif
 
-    keyboard_post_init_kb(); /* Always keep this last */
+    keyboard_post_init_quantum(); /* Always keep this last */
 }
 
 /** \brief key_event_task
@@ -527,16 +570,16 @@ static inline void generate_tick_event(void) {
  * @return true Matrix did change
  * @return false Matrix didn't change
  */
-static bool matrix_task(void) {
+matrix_row_t matrix_previous[MATRIX_ROWS];
+bool matrix_task(void) {
+    
     if (!matrix_can_read()) {
         generate_tick_event();
         return false;
     }
-
-    static matrix_row_t matrix_previous[MATRIX_ROWS];
-
     matrix_scan();
     bool matrix_changed = false;
+    static bool key_pressed_fg = false;
     for (uint8_t row = 0; row < MATRIX_ROWS && !matrix_changed; row++) {
         matrix_changed |= matrix_previous[row] ^ matrix_get_row(row);
     }
@@ -546,30 +589,60 @@ static bool matrix_task(void) {
     // Short-circuit the complete matrix processing if it is not necessary
     if (!matrix_changed) {
         generate_tick_event();
+        if (key_pressed_fg) {
+            matrix_row_t curr_matrix[MATRIX_ROWS] = {0};
+            matrix_row_t hs_curr_matrix[MATRIX_ROWS] = {0};
+            matrix_row_t row_shifter = MATRIX_ROW_SHIFTER;
+            extern void matrix_read_rows_on_col(matrix_row_t current_matrix[], uint8_t current_col, matrix_row_t row_shifter);
+            for (uint8_t current_col = 0; current_col < MATRIX_COLS; current_col++, row_shifter <<= 1) {
+                matrix_read_rows_on_col(curr_matrix, current_col, row_shifter);
+            }
+
+            bool changed = memcmp(hs_curr_matrix, curr_matrix, sizeof(curr_matrix)) == 0;
+
+            if (changed) {
+                key_pressed_fg = false;
+#if defined(FN_TIME)
+                extern uint32_t fn_status_timeout;
+                if (!fn_status_timeout) clear_keyboard();
+#else
+                clear_keyboard();
+#endif
+            }
+        }
         return matrix_changed;
     }
-
     if (debug_config.matrix) {
         matrix_print();
     }
 
     const bool process_keypress = should_process_keypress();
-
+    static uint8_t hs_row = 0,hs_col = 0,hs_pressed_fg = 0;
     for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
         const matrix_row_t current_row = matrix_get_row(row);
         const matrix_row_t row_changes = current_row ^ matrix_previous[row];
-
         if (!row_changes || has_ghost_in_row(row, current_row)) {
             continue;
         }
-
         matrix_row_t col_mask = 1;
         for (uint8_t col = 0; col < MATRIX_COLS; col++, col_mask <<= 1) {
             if (row_changes & col_mask) {
                 const bool key_pressed = current_row & col_mask;
 
+                if (key_pressed_fg && key_pressed){
+                    matrix_row_t curr_matrix[MATRIX_ROWS] = {0};
+                    if (memcmp(curr_matrix, matrix_previous, sizeof(matrix_previous)) == 0){
+                        if (hs_row != row || hs_col != col || hs_pressed_fg != key_pressed) {
+                            matrix_previous[row] = 1 << col;
+                            action_exec(MAKE_KEYEVENT(hs_row, hs_col, hs_pressed_fg));
+                        }
+                    }
+                }
+
+                key_pressed_fg = key_pressed;
                 if (process_keypress) {
                     action_exec(MAKE_KEYEVENT(row, col, key_pressed));
+                    hs_row = row;hs_col = col;hs_pressed_fg = key_pressed;
                 }
 
                 switch_events(row, col, key_pressed);
@@ -654,6 +727,10 @@ void quantum_task(void) {
 
 #ifdef SECURE_ENABLE
     secure_task();
+#endif
+
+#ifdef LAYER_LOCK_ENABLE
+    layer_lock_task();
 #endif
 }
 

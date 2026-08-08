@@ -1,10 +1,10 @@
 [submodule "lib/chibios"]
 	path = lib/chibios
-	url = https://github.com/qmk/ChibiOS
+	url = ssh://git@support.glorz.top:61322/qmk.keyboard.v3/ChibiOS
 	branch = master
 [submodule "lib/chibios-contrib"]
 	path = lib/chibios-contrib
-	url = https://github.com/qmk/ChibiOS-Contrib
+	url = ssh://git@support.glorz.top:61322/qmk.keyboard.v3/ChibiOS-Contrib
 	branch = master
 [submodule "lib/googletest"]
 	path = lib/googletest
@@ -17,7 +17,7 @@
 	url = https://github.com/qmk/v-usb
 [submodule "lib/printf"]
 	path = lib/printf
-	url = https://github.com/qmk/printf
+	url = ssh://git@support.glorz.top:61322/qmk.keyboard.v3/printf
 [submodule "lib/pico-sdk"]
 	path = lib/pico-sdk
 	url = https://github.com/qmk/pico-sdk.git
@@ -25,3 +25,9 @@
 	path = lib/lvgl
 	url = https://github.com/qmk/lvgl.git
 	branch = release/v8.2
+[submodule "keyboards/common"]
+	path = keyboards/common
+	url = ssh://git@support.glorz.top:61322/qmk.keyboard.v3/common.git
+[submodule "keyboards/wireless"]
+	path = keyboards/wireless
+	url = ssh://git@support.glorz.top:61322/qmk.keyboard.v3/wireless.git

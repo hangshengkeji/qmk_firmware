@@ -62,7 +62,7 @@ void backlight_init(void) {
     }
     backlight_check_config();
 
-    backlight_set(backlight_config.enable ? backlight_config.level : 0);
+    // backlight_set(backlight_config.enable ? backlight_config.level : 0);
 }
 
 /** \brief Backlight increase

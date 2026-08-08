@@ -1,1 +1,0 @@
-SRC += control/control.c

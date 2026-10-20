@@ -8,7 +8,11 @@
             "type": "string",
             "minLength": 2,
             "maxLength": 50,
-            "pattern": "^[A-Z][A-Zs_0-9]*$"
+            "pattern": "^[A-Zs_0-9]*$"
+        },
+        "hex_number_4d": {
+            "type": "string",
+            "pattern": "^0x[0-9A-F]{4}$"
         }
     },
     "properties": {
@@ -30,10 +34,10 @@
         "keycodes": {
             "type": "object",
             "propertyNames": {
-                "$ref": "qmk.definitions.v1#/hex_number_4d"
+                "$ref": "#/definitions/hex_number_4d"
             },
             "additionalProperties": {
-                "type": "object", // use 'qmk.definitions.v1#/keycode_decl' when problem keycodes are removed
+                "type": "object",
                 "required": [
                     "key"
                 ],

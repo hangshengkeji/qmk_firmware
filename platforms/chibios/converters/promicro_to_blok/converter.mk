@@ -1,6 +1,6 @@
 # Boardsource Blok MCU settings for converting AVR projects
 MCU := RP2040
-BOARD := QMK_BLOK
+BOARD := QMK_PM2040
 BOOTLOADER := rp2040
 
 # These are defaults based on what has been implemented for RP2040 boards

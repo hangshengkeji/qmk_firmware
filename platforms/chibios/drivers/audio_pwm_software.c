@@ -25,7 +25,8 @@ this driver uses the chibios-PWM system to produce a square-wave on any given ou
 
  */
 #include "audio.h"
-#include "gpio.h"
+#include "ch.h"
+#include "hal.h"
 
 #if !defined(AUDIO_PIN)
 #    error "Audio feature enabled, but no pin selected - see docs/feature_audio under the ARM PWM settings"
@@ -121,7 +122,7 @@ GPTConfig   gptCFG = {
     .callback  = gpt_callback,
 };
 
-void audio_driver_initialize_impl(void) {
+void audio_driver_initialize(void) {
     pwmStart(&AUDIO_PWM_DRIVER, &pwmCFG);
 
     palSetLineMode(AUDIO_PIN, PAL_MODE_OUTPUT_PUSHPULL);
@@ -138,7 +139,7 @@ void audio_driver_initialize_impl(void) {
     gptStart(&AUDIO_STATE_TIMER, &gptCFG);
 }
 
-void audio_driver_start_impl(void) {
+void audio_driver_start(void) {
     channel_1_stop();
     channel_1_start();
 
@@ -147,7 +148,7 @@ void audio_driver_start_impl(void) {
     }
 }
 
-void audio_driver_stop_impl(void) {
+void audio_driver_stop(void) {
     channel_1_stop();
     gptStopTimer(&AUDIO_STATE_TIMER);
 }

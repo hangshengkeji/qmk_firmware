@@ -3,7 +3,6 @@ name: 'Close stale issues and PRs'
 permissions:
   issues: write
   pull-requests: write
-  actions: write
 
 on:
   schedule:
@@ -14,7 +13,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@main
+      - uses: actions/stale@v8
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 

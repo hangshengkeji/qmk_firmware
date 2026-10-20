@@ -19,7 +19,6 @@ typedef struct qff_font_handle_t {
     uint16_t              num_unicode_glyphs;
     uint8_t               bpp;
     bool                  has_palette;
-    bool                  is_panel_native;
     painter_compression_t compression_scheme;
     union {
         qp_stream_t        stream;
@@ -98,7 +97,7 @@ static painter_font_handle_t qp_load_font_internal(bool (*stream_factory)(qff_fo
 #endif // QUANTUM_PAINTER_LOAD_FONTS_TO_RAM
 
     // Read the info (parsing already successful above, no need to check return value)
-    qff_read_font_descriptor(&font->stream, &font->base.line_height, &font->has_ascii_table, &font->num_unicode_glyphs, &font->bpp, &font->has_palette, &font->is_panel_native, &font->compression_scheme, NULL);
+    qff_read_font_descriptor(&font->stream, &font->base.line_height, &font->has_ascii_table, &font->num_unicode_glyphs, &font->bpp, &font->has_palette, &font->compression_scheme, NULL);
 
     if (!qp_internal_bpp_capable(font->bpp)) {
         qp_dprintf("qp_load_font: fail (image bpp too high (%d), check QUANTUM_PAINTER_SUPPORTS_256_PALETTE or QUANTUM_PAINTER_SUPPORTS_NATIVE_COLORS)\n", (int)font->bpp);
@@ -137,7 +136,7 @@ painter_font_handle_t qp_load_font_mem(const void *buffer) {
 
 bool qp_close_font(painter_font_handle_t font) {
     qff_font_handle_t *qff_font = (qff_font_handle_t *)font;
-    if (!qff_font || !qff_font->validate_ok) {
+    if (!qff_font->validate_ok) {
         qp_dprintf("qp_close_font: fail (invalid font)\n");
         return false;
     }
@@ -165,7 +164,7 @@ typedef bool (*code_point_handler)(qff_font_handle_t *qff_font, uint32_t code_po
 
 // Helper that sets up the palette (if required) and returns the offset in the stream that the data starts
 static inline bool qp_drawtext_prepare_font_for_render(painter_device_t device, qff_font_handle_t *qff_font, qp_pixel_t fg_hsv888, qp_pixel_t bg_hsv888, uint32_t *data_offset) {
-    painter_driver_t *driver = (painter_driver_t *)device;
+    struct painter_driver_t *driver = (struct painter_driver_t *)device;
 
     // Drop out if we can't actually place the data we read out anywhere
     if (!data_offset) {
@@ -320,13 +319,13 @@ static inline bool qp_iterate_code_points(qff_font_handle_t *qff_font, const cha
 // String width calculation
 
 // Callback state
-typedef struct code_point_iter_calcwidth_state_t {
+struct code_point_iter_calcwidth_state {
     int16_t width;
-} code_point_iter_calcwidth_state_t;
+};
 
 // Codepoint handler callback: width calc
 static inline bool qp_font_code_point_handler_calcwidth(qff_font_handle_t *qff_font, uint32_t code_point, uint8_t width, uint8_t height, void *cb_arg) {
-    code_point_iter_calcwidth_state_t *state = (code_point_iter_calcwidth_state_t *)cb_arg;
+    struct code_point_iter_calcwidth_state *state = (struct code_point_iter_calcwidth_state *)cb_arg;
 
     // Increment the overall width by this glyph's width
     state->width += width;
@@ -338,19 +337,19 @@ static inline bool qp_font_code_point_handler_calcwidth(qff_font_handle_t *qff_f
 // String drawing implementation
 
 // Callback state
-typedef struct code_point_iter_drawglyph_state_t {
-    painter_device_t                  device;
-    int16_t                           xpos;
-    int16_t                           ypos;
-    qp_internal_byte_input_callback   input_callback;
-    qp_internal_byte_input_state_t *  input_state;
-    qp_internal_pixel_output_state_t *output_state;
-} code_point_iter_drawglyph_state_t;
+struct code_point_iter_drawglyph_state {
+    painter_device_t                       device;
+    int16_t                                xpos;
+    int16_t                                ypos;
+    qp_internal_byte_input_callback        input_callback;
+    struct qp_internal_byte_input_state *  input_state;
+    struct qp_internal_pixel_output_state *output_state;
+};
 
 // Codepoint handler callback: drawing
 static inline bool qp_font_code_point_handler_drawglyph(qff_font_handle_t *qff_font, uint32_t code_point, uint8_t width, uint8_t height, void *cb_arg) {
-    code_point_iter_drawglyph_state_t *state  = (code_point_iter_drawglyph_state_t *)cb_arg;
-    painter_driver_t *                 driver = (painter_driver_t *)state->device;
+    struct code_point_iter_drawglyph_state *state  = (struct code_point_iter_drawglyph_state *)cb_arg;
+    struct painter_driver_t *               driver = (struct painter_driver_t *)state->device;
 
     // Reset the input state's RLE mode -- the stream should already be correctly positioned by qp_iterate_code_points()
     state->input_state->rle.mode = MARKER_BYTE; // ignored if not using RLE
@@ -364,9 +363,16 @@ static inline bool qp_font_code_point_handler_drawglyph(qff_font_handle_t *qff_f
     // Move the x-position for the next glyph
     state->xpos += width;
 
-    // Decode the pixel data for the glyph, and stream it
+    // Decode the pixel data for the glyph
     uint32_t pixel_count = ((uint32_t)width) * height;
-    return qp_internal_appender(state->device, qff_font->bpp, pixel_count, state->input_callback, state->input_state);
+    bool     ret         = qp_internal_decode_palette(state->device, pixel_count, qff_font->bpp, state->input_callback, state->input_state, qp_internal_global_pixel_lookup_table, qp_internal_pixel_appender, state->output_state);
+
+    // Any leftovers need transmission as well.
+    if (ret && state->output_state->pixel_write_pos > 0) {
+        ret &= driver->driver_vtable->pixdata(state->device, qp_internal_global_pixdata_buffer, state->output_state->pixel_write_pos);
+    }
+
+    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -374,13 +380,13 @@ static inline bool qp_font_code_point_handler_drawglyph(qff_font_handle_t *qff_f
 
 int16_t qp_textwidth(painter_font_handle_t font, const char *str) {
     qff_font_handle_t *qff_font = (qff_font_handle_t *)font;
-    if (!qff_font || !qff_font->validate_ok) {
+    if (!qff_font->validate_ok) {
         qp_dprintf("qp_textwidth: fail (invalid font)\n");
         return false;
     }
 
     // Create the codepoint iterator state
-    code_point_iter_calcwidth_state_t state = {.width = 0};
+    struct code_point_iter_calcwidth_state state = {.width = 0};
     // Iterate each codepoint, return the calculated width if successful.
     return qp_iterate_code_points(qff_font, str, qp_font_code_point_handler_calcwidth, &state) ? state.width : 0;
 }
@@ -399,14 +405,14 @@ int16_t qp_drawtext(painter_device_t device, uint16_t x, uint16_t y, painter_fon
 
 int16_t qp_drawtext_recolor(painter_device_t device, uint16_t x, uint16_t y, painter_font_handle_t font, const char *str, uint8_t hue_fg, uint8_t sat_fg, uint8_t val_fg, uint8_t hue_bg, uint8_t sat_bg, uint8_t val_bg) {
     qp_dprintf("qp_drawtext_recolor: entry\n");
-    painter_driver_t *driver = (painter_driver_t *)device;
-    if (!driver || !driver->validate_ok) {
+    struct painter_driver_t *driver = (struct painter_driver_t *)device;
+    if (!driver->validate_ok) {
         qp_dprintf("qp_drawtext_recolor: fail (validation_ok == false)\n");
         return 0;
     }
 
     qff_font_handle_t *qff_font = (qff_font_handle_t *)font;
-    if (!qff_font || !qff_font->validate_ok) {
+    if (!qff_font->validate_ok) {
         qp_dprintf("qp_drawtext_recolor: fail (invalid font)\n");
         return false;
     }
@@ -417,8 +423,8 @@ int16_t qp_drawtext_recolor(painter_device_t device, uint16_t x, uint16_t y, pai
     }
 
     // Set up the byte input state and input callback
-    qp_internal_byte_input_state_t  input_state    = {.device = device, .src_stream = &qff_font->stream};
-    qp_internal_byte_input_callback input_callback = qp_internal_prepare_input_state(&input_state, qff_font->compression_scheme);
+    struct qp_internal_byte_input_state input_state    = {.device = device, .src_stream = &qff_font->stream};
+    qp_internal_byte_input_callback     input_callback = qp_internal_prepare_input_state(&input_state, qff_font->compression_scheme);
     if (input_callback == NULL) {
         qp_dprintf("qp_drawtext_recolor: fail (invalid font compression scheme)\n");
         qp_comms_stop(device);
@@ -426,18 +432,18 @@ int16_t qp_drawtext_recolor(painter_device_t device, uint16_t x, uint16_t y, pai
     }
 
     // Set up the pixel output state
-    qp_internal_pixel_output_state_t output_state = {.device = device, .pixel_write_pos = 0, .max_pixels = qp_internal_num_pixels_in_buffer(device)};
+    struct qp_internal_pixel_output_state output_state = {.device = device, .pixel_write_pos = 0, .max_pixels = qp_internal_num_pixels_in_buffer(device)};
 
     // Set up the codepoint iteration state
-    code_point_iter_drawglyph_state_t state = {// Common
-                                               .device = device,
-                                               .xpos   = x,
-                                               .ypos   = y,
-                                               // Input
-                                               .input_callback = input_callback,
-                                               .input_state    = &input_state,
-                                               // Output
-                                               .output_state = &output_state};
+    struct code_point_iter_drawglyph_state state = {// Common
+                                                    .device = device,
+                                                    .xpos   = x,
+                                                    .ypos   = y,
+                                                    // Input
+                                                    .input_callback = input_callback,
+                                                    .input_state    = &input_state,
+                                                    // Output
+                                                    .output_state = &output_state};
 
     qp_pixel_t fg_hsv888 = {.hsv888 = {.h = hue_fg, .s = sat_fg, .v = val_fg}};
     qp_pixel_t bg_hsv888 = {.hsv888 = {.h = hue_bg, .s = sat_bg, .v = val_bg}};

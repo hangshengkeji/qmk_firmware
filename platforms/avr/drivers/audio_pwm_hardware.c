@@ -15,9 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(__AVR__)
+#    include <avr/pgmspace.h>
+#    include <avr/interrupt.h>
+#    include <avr/io.h>
+#endif
+
 #include "audio.h"
-#include "gpio.h"
-#include <avr/interrupt.h>
 
 extern bool    playing_note;
 extern bool    playing_melody;
@@ -213,15 +217,15 @@ void channel_2_stop(void) {
 }
 #endif
 
-void audio_driver_initialize_impl(void) {
+void audio_driver_initialize(void) {
 #ifdef AUDIO1_PIN_SET
     channel_1_stop();
-    gpio_set_pin_output(AUDIO1_PIN);
+    setPinOutput(AUDIO1_PIN);
 #endif
 
 #ifdef AUDIO2_PIN_SET
     channel_2_stop();
-    gpio_set_pin_output(AUDIO2_PIN);
+    setPinOutput(AUDIO2_PIN);
 #endif
 
     // TCCR3A / TCCR3B: Timer/Counter #3 Control Registers TCCR3A/TCCR3B, TCCR1A/TCCR1B
@@ -254,7 +258,7 @@ void audio_driver_initialize_impl(void) {
 #endif
 }
 
-void audio_driver_stop_impl(void) {
+void audio_driver_stop(void) {
 #ifdef AUDIO1_PIN_SET
     channel_1_stop();
 #endif
@@ -264,7 +268,7 @@ void audio_driver_stop_impl(void) {
 #endif
 }
 
-void audio_driver_start_impl(void) {
+void audio_driver_start(void) {
 #ifdef AUDIO1_PIN_SET
     channel_1_start();
     if (playing_note) {

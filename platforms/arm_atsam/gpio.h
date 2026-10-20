@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <stdint.h>
+#include "stdint.h"
 #include "samd51j18a.h"
 
 #include "pin_defs.h"
@@ -26,13 +26,13 @@ typedef uint8_t pin_t;
 #define SAMD_PIN(pin) ((pin)&0x1f)
 #define SAMD_PIN_MASK(pin) (1 << ((pin)&0x1f))
 
-#define gpio_set_pin_input(pin)                                                          \
+#define setPinInput(pin)                                                                 \
     do {                                                                                 \
         PORT->Group[SAMD_PORT(pin)].PINCFG[SAMD_PIN(pin)].bit.INEN = 1;                  \
         PORT->Group[SAMD_PORT(pin)].DIRCLR.reg                     = SAMD_PIN_MASK(pin); \
     } while (0)
 
-#define gpio_set_pin_input_high(pin)                                                       \
+#define setPinInputHigh(pin)                                                               \
     do {                                                                                   \
         PORT->Group[SAMD_PORT(pin)].DIRCLR.reg                       = SAMD_PIN_MASK(pin); \
         PORT->Group[SAMD_PORT(pin)].OUTSET.reg                       = SAMD_PIN_MASK(pin); \
@@ -40,7 +40,7 @@ typedef uint8_t pin_t;
         PORT->Group[SAMD_PORT(pin)].PINCFG[SAMD_PIN(pin)].bit.PULLEN = 1;                  \
     } while (0)
 
-#define gpio_set_pin_input_low(pin)                                                        \
+#define setPinInputLow(pin)                                                                \
     do {                                                                                   \
         PORT->Group[SAMD_PORT(pin)].DIRCLR.reg                       = SAMD_PIN_MASK(pin); \
         PORT->Group[SAMD_PORT(pin)].OUTCLR.reg                       = SAMD_PIN_MASK(pin); \
@@ -48,27 +48,27 @@ typedef uint8_t pin_t;
         PORT->Group[SAMD_PORT(pin)].PINCFG[SAMD_PIN(pin)].bit.PULLEN = 1;                  \
     } while (0)
 
-#define gpio_set_pin_output_push_pull(pin)                           \
+#define setPinOutputPushPull(pin)                                    \
     do {                                                             \
         PORT->Group[SAMD_PORT(pin)].DIRSET.reg = SAMD_PIN_MASK(pin); \
         PORT->Group[SAMD_PORT(pin)].OUTCLR.reg = SAMD_PIN_MASK(pin); \
     } while (0)
 
-#define gpio_set_pin_output_open_drain(pin) _Static_assert(0, "Open-drain outputs are not available on ATSAM")
+#define setPinOutputOpenDrain(pin) _Static_assert(0, "arm_atsam platform does not implement an open-drain output")
 
-#define gpio_set_pin_output(pin) gpio_set_pin_output_push_pull(pin)
+#define setPinOutput(pin) setPinOutputPushPull(pin)
 
-#define gpio_write_pin_high(pin)                                     \
+#define writePinHigh(pin)                                            \
     do {                                                             \
         PORT->Group[SAMD_PORT(pin)].OUTSET.reg = SAMD_PIN_MASK(pin); \
     } while (0)
 
-#define gpio_write_pin_low(pin)                                      \
+#define writePinLow(pin)                                             \
     do {                                                             \
         PORT->Group[SAMD_PORT(pin)].OUTCLR.reg = SAMD_PIN_MASK(pin); \
     } while (0)
 
-#define gpio_write_pin(pin, level)                                       \
+#define writePin(pin, level)                                             \
     do {                                                                 \
         if (level)                                                       \
             PORT->Group[SAMD_PORT(pin)].OUTSET.reg = SAMD_PIN_MASK(pin); \
@@ -76,6 +76,6 @@ typedef uint8_t pin_t;
             PORT->Group[SAMD_PORT(pin)].OUTCLR.reg = SAMD_PIN_MASK(pin); \
     } while (0)
 
-#define gpio_read_pin(pin) ((PORT->Group[SAMD_PORT(pin)].IN.reg & SAMD_PIN_MASK(pin)) != 0)
+#define readPin(pin) ((PORT->Group[SAMD_PORT(pin)].IN.reg & SAMD_PIN_MASK(pin)) != 0)
 
-#define gpio_toggle_pin(pin) (PORT->Group[SAMD_PORT(pin)].OUTTGL.reg = SAMD_PIN_MASK(pin))
+#define togglePin(pin) (PORT->Group[SAMD_PORT(pin)].OUTTGL.reg = SAMD_PIN_MASK(pin))

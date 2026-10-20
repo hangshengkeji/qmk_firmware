@@ -13,10 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$(TEST_OUTPUT)_INC := \
+$(TEST)_INC := \
 	tests/test_common/common_config.h
 
-$(TEST_OUTPUT)_SRC := \
+$(TEST)_SRC := \
+	$(TMK_COMMON_SRC) \
 	$(QUANTUM_SRC) \
 	$(SRC) \
 	$(QUANTUM_PATH)/keymap_introspection.c \
@@ -30,8 +31,8 @@ $(TEST_OUTPUT)_SRC := \
 	tests/test_common/test_logger.cpp \
 	$(patsubst $(ROOTDIR)/%,%,$(wildcard $(TEST_PATH)/*.cpp))
 
-$(TEST_OUTPUT)_DEFS := $(OPT_DEFS) "-DKEYMAP_C=\"keymap.c\""
+$(TEST)_DEFS := $(TMK_COMMON_DEFS) $(OPT_DEFS) "-DKEYMAP_C=\"keymap.c\""
 
-$(TEST_OUTPUT)_CONFIG := $(TEST_PATH)/config.h
+$(TEST)_CONFIG := $(TEST_PATH)/config.h
 
 VPATH += $(TOP_DIR)/tests/test_common

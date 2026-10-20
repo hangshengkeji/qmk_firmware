@@ -15,13 +15,12 @@
  */
 #include "process_midi.h"
 
-#include <LUFA/Drivers/USB/USB.h>
-#include "midi.h"
-#include "qmk_midi.h"
-#include "timer.h"
-#include "debug.h"
+#ifdef MIDI_ENABLE
+#    include <LUFA/Drivers/USB/USB.h>
+#    include "midi.h"
+#    include "qmk_midi.h"
 
-#ifdef MIDI_BASIC
+#    ifdef MIDI_BASIC
 
 void process_midi_basic_noteon(uint8_t note) {
     midi_send_noteon(&midi_device, 0, note, 127);
@@ -35,10 +34,13 @@ void process_midi_all_notes_off(void) {
     midi_send_cc(&midi_device, 0, 0x7B, 0);
 }
 
-#endif // MIDI_BASIC
+#    endif // MIDI_BASIC
 
-#ifdef MIDI_ADVANCED
-static uint8_t tone_status[MIDI_TONE_COUNT];
+#    ifdef MIDI_ADVANCED
+
+#        include "timer.h"
+
+static uint8_t tone_status[2][MIDI_TONE_COUNT];
 
 static uint8_t  midi_modulation;
 static int8_t   midi_modulation_step;
@@ -57,7 +59,8 @@ void midi_init(void) {
     midi_config.modulation_interval = 8;
 
     for (uint8_t i = 0; i < MIDI_TONE_COUNT; i++) {
-        tone_status[i] = MIDI_INVALID_NOTE;
+        tone_status[0][i] = MIDI_INVALID_NOTE;
+        tone_status[1][i] = 0;
     }
 
     midi_modulation       = 0;
@@ -76,19 +79,21 @@ bool process_midi(uint16_t keycode, keyrecord_t *record) {
             uint8_t tone     = keycode - MIDI_TONE_MIN;
             uint8_t velocity = midi_config.velocity;
             if (record->event.pressed) {
-                if (tone_status[tone] == MIDI_INVALID_NOTE) {
-                    uint8_t note = midi_compute_note(keycode);
-                    midi_send_noteon(&midi_device, channel, note, velocity);
-                    dprintf("midi noteon channel:%d note:%d velocity:%d\n", channel, note, velocity);
-                    tone_status[tone] = note;
+                uint8_t note = midi_compute_note(keycode);
+                midi_send_noteon(&midi_device, channel, note, velocity);
+                dprintf("midi noteon channel:%d note:%d velocity:%d\n", channel, note, velocity);
+                tone_status[1][tone] += 1;
+                if (tone_status[0][tone] == MIDI_INVALID_NOTE) {
+                    tone_status[0][tone] = note;
                 }
             } else {
-                uint8_t note = tone_status[tone];
-                if (note != MIDI_INVALID_NOTE) {
+                uint8_t note = tone_status[0][tone];
+                tone_status[1][tone] -= 1;
+                if (tone_status[1][tone] == 0) {
                     midi_send_noteoff(&midi_device, channel, note, velocity);
                     dprintf("midi noteoff channel:%d note:%d velocity:%d\n", channel, note, velocity);
+                    tone_status[0][tone] = MIDI_INVALID_NOTE;
                 }
-                tone_status[tone] = MIDI_INVALID_NOTE;
             }
             return false;
         }
@@ -243,11 +248,11 @@ bool process_midi(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
-#endif // MIDI_ADVANCED
+#    endif // MIDI_ADVANCED
 
 void midi_task(void) {
     midi_device_process(&midi_device);
-#ifdef MIDI_ADVANCED
+#    ifdef MIDI_ADVANCED
     if (timer_elapsed(midi_modulation_timer) < midi_config.modulation_interval) return;
     midi_modulation_timer = timer_read();
 
@@ -265,5 +270,7 @@ void midi_task(void) {
 
         if (midi_modulation > 127) midi_modulation = 127;
     }
-#endif
+#    endif
 }
+
+#endif // MIDI_ENABLE

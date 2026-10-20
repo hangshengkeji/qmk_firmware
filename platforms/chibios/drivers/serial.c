@@ -2,15 +2,15 @@
  * WARNING: be careful changing this code, it is very timing dependent
  */
 
+#include "quantum.h"
 #include "serial.h"
-#include "gpio.h"
 #include "wait.h"
 #include "synchronization_util.h"
 
 #include <hal.h>
 
 // TODO: resolve/remove build warnings
-#if defined(RGBLIGHT_ENABLE) && defined(RGBLED_SPLIT) && defined(PROTOCOL_CHIBIOS) && defined(WS2812_BITBANG)
+#if defined(RGBLIGHT_ENABLE) && defined(RGBLED_SPLIT) && defined(PROTOCOL_CHIBIOS) && defined(WS2812_DRIVER_BITBANG)
 #    warning "RGBLED_SPLIT not supported with bitbang WS2812 driver"
 #endif
 
@@ -62,25 +62,25 @@ inline static void serial_delay_blip(void) {
     wait_us(1);
 }
 inline static void serial_output(void) {
-    gpio_set_pin_output(SOFT_SERIAL_PIN);
+    setPinOutput(SOFT_SERIAL_PIN);
 }
 inline static void serial_input(void) {
-    gpio_set_pin_input_high(SOFT_SERIAL_PIN);
+    setPinInputHigh(SOFT_SERIAL_PIN);
 }
 inline static bool serial_read_pin(void) {
-    return !!gpio_read_pin(SOFT_SERIAL_PIN);
+    return !!readPin(SOFT_SERIAL_PIN);
 }
 inline static void serial_low(void) {
-    gpio_write_pin_low(SOFT_SERIAL_PIN);
+    writePinLow(SOFT_SERIAL_PIN);
 }
 inline static void serial_high(void) {
-    gpio_write_pin_high(SOFT_SERIAL_PIN);
+    writePinHigh(SOFT_SERIAL_PIN);
 }
 
 void interrupt_handler(void *arg);
 
 // Use thread + palWaitLineTimeout instead of palSetLineCallback
-//  - Methods like gpio_set_pin_output and palEnableLineEvent/palDisableLineEvent
+//  - Methods like setPinOutput and palEnableLineEvent/palDisableLineEvent
 //    cause the interrupt to lock up, which would limit to only receiving data...
 static THD_WORKING_AREA(waThread1, 128);
 static THD_FUNCTION(Thread1, arg) {

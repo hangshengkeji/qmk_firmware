@@ -14,19 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "dynamic_keymap.h"
-#include "keymap_introspection.h"
-#include "action.h"
+#include "keymap.h" // to get keymaps[][][]
 #include "eeprom.h"
-#include "progmem.h"
-#include "send_string.h"
-#include "keycodes.h"
+#include "progmem.h" // to read default from flash
+#include "quantum.h" // for send_string()
+#include "dynamic_keymap.h"
 
 #ifdef VIA_ENABLE
-#    include "via.h"
+#    include "via.h" // for VIA_EEPROM_CONFIG_END
 #    define DYNAMIC_KEYMAP_EEPROM_START (VIA_EEPROM_CONFIG_END)
 #else
-#    include "eeconfig.h"
 #    define DYNAMIC_KEYMAP_EEPROM_START (EECONFIG_SIZE)
 #endif
 
@@ -155,13 +152,22 @@ void dynamic_keymap_reset(void) {
     for (int layer = 0; layer < DYNAMIC_KEYMAP_LAYER_COUNT; layer++) {
         for (int row = 0; row < MATRIX_ROWS; row++) {
             for (int column = 0; column < MATRIX_COLS; column++) {
-                dynamic_keymap_set_keycode(layer, row, column, keycode_at_keymap_location_raw(layer, row, column));
+                if (layer < keymap_layer_count()) {
+                    dynamic_keymap_set_keycode(layer, row, column, keycode_at_keymap_location_raw(layer, row, column));
+                } else {
+                    dynamic_keymap_set_keycode(layer, row, column, KC_TRANSPARENT);
+                }
             }
         }
 #ifdef ENCODER_MAP_ENABLE
         for (int encoder = 0; encoder < NUM_ENCODERS; encoder++) {
-            dynamic_keymap_set_encoder(layer, encoder, true, keycode_at_encodermap_location_raw(layer, encoder, true));
-            dynamic_keymap_set_encoder(layer, encoder, false, keycode_at_encodermap_location_raw(layer, encoder, false));
+            if (layer < encodermap_layer_count()) {
+                dynamic_keymap_set_encoder(layer, encoder, true, keycode_at_encodermap_location_raw(layer, encoder, true));
+                dynamic_keymap_set_encoder(layer, encoder, false, keycode_at_encodermap_location_raw(layer, encoder, false));
+            } else {
+                dynamic_keymap_set_encoder(layer, encoder, true, KC_TRANSPARENT);
+                dynamic_keymap_set_encoder(layer, encoder, false, KC_TRANSPARENT);
+            }
         }
 #endif // ENCODER_MAP_ENABLE
     }
@@ -254,11 +260,38 @@ void dynamic_keymap_macro_reset(void) {
     }
 }
 
+#ifdef DYNAMIC_KEYMAP_MACRO_SEND_THREAD
+void dynamic_keymap_macro_send_hook(uint8_t id) {
+#else
 void dynamic_keymap_macro_send(uint8_t id) {
+#endif
+
     if (id >= DYNAMIC_KEYMAP_MACRO_COUNT) {
         return;
     }
-
+#ifdef DYNAMIC_MACRO_ENABLE
+    extern bool macro;
+    extern uint8_t point[5][2];
+    keyrecord_t records = {0};
+    #include "rgb_record.h"
+    #include "rgb_matrix.h"
+    #ifdef RK785
+        extern bool touch_flag;
+        if (!touch_flag && id == 15) return;
+    #endif
+    #ifdef GENERAL
+        extern bool general;
+        if (general) return;
+    #endif
+    if (rgbrec_is_started()){
+        if (dynamic_keymap_get_keycode(0,point[id][0],point[id][1]) == (MC_0 + id)){ 
+            records.event.key.row = point[id][0];records.event.key.col = point[id][1]; rgbrec_register_record(MC_0,&records);
+        }
+        return;
+    }
+ 
+    if (macro) return;
+#endif
     // Check the last byte of the buffer.
     // If it's not zero, then we are in the middle
     // of buffer writing, possibly an aborted buffer
@@ -283,7 +316,7 @@ void dynamic_keymap_macro_send(uint8_t id) {
         }
         ++p;
     }
-
+   
     // Send the macro string by making a temporary string.
     char data[8] = {0};
     // We already checked there was a null at the end of
@@ -338,3 +371,36 @@ void dynamic_keymap_macro_send(uint8_t id) {
         send_string_with_delay(data, DYNAMIC_KEYMAP_MACRO_DELAY);
     }
 }
+
+#ifdef DYNAMIC_KEYMAP_MACRO_SEND_THREAD
+static uint8_t macro_send_id = 0;
+static THD_WORKING_AREA(MacroSendThread, 128);
+static thread_t *macro_send_thread = NULL;
+static THD_FUNCTION(MacroSendThreadFun, arg) {
+    (void)arg;
+    chRegSetThreadName("myThread");
+
+    do {
+        chThdSleepMilliseconds(100);
+        dynamic_keymap_macro_send_hook(macro_send_id);
+    } while (false);
+
+    macro_send_thread = NULL;
+    chThdExit(MSG_OK);
+}
+
+void dynamic_keymap_macro_send(uint8_t id) {
+
+    if (macro_send_thread != NULL) {
+#    ifdef DYNAMIC_KEYMAP_MACRO_WAIT
+        return;
+#    else
+        chThdTerminate(macro_send_thread);
+        chThdWait(macro_send_thread); // wait thread close.
+#    endif
+    }
+    
+    macro_send_id     = id;
+    macro_send_thread = chThdCreateStatic(MacroSendThread, sizeof(MacroSendThread), HIGHPRIO, MacroSendThreadFun, NULL);
+}
+#endif

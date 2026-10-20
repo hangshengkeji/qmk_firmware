@@ -5,7 +5,6 @@ This project includes a Docker workflow that will allow you to build a new firmw
 ## Requirements
 
 The main prerequisite is a working `docker` or `podman` install.
-
 * [Docker CE](https://docs.docker.com/install/#supported-platforms)
 * [Podman](https://podman.io/getting-started/installation)
 
@@ -19,7 +18,6 @@ cd qmk_firmware
 ```
 
 Run the following command to build a keymap:
-
 ```
 util/docker_build.sh <keyboard>:<keymap>
 # For example: util/docker_build.sh planck/rev6:default
@@ -33,8 +31,6 @@ There is also support for building _and_ flashing the keyboard straight from Doc
 util/docker_build.sh keyboard:keymap:target
 # For example: util/docker_build.sh planck/rev6:default:flash
 ```
-
-Note that mass storage bootloaders are not supported by the `flash` target. In this case you will have to manually copy the firmware file to the keyboard.
 
 You can also start the script without any parameters, in which case it will ask you to input the build parameters one by one, which you may find easier to use:
 
@@ -56,6 +52,4 @@ RUNTIME="podman" util/docker_build.sh keyboard:keymap:target
 
 On Windows and macOS, it requires [Docker Machine](http://gw.tnode.com/docker/docker-machine-with-usb-support-on-windows-macos/) to be running. This is tedious to set up, so it's not recommended; use [QMK Toolbox](https://github.com/qmk/qmk_toolbox) instead.
 
-::: warning
-Docker for Windows requires [Hyper-V](https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/quick-start/enable-hyper-v) to be enabled. This means that it cannot work on versions of Windows which don't have Hyper-V, such as Windows 7, Windows 8 and **Windows 10 Home**.
-:::
+!> Docker for Windows requires [Hyper-V](https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/quick-start/enable-hyper-v) to be enabled. This means that it cannot work on versions of Windows which don't have Hyper-V, such as Windows 7, Windows 8 and **Windows 10 Home**.

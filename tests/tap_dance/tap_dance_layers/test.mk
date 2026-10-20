@@ -7,4 +7,4 @@
 
 TAP_DANCE_ENABLE = yes
 
-INTROSPECTION_KEYMAP_C = tap_dance_defs.c
+SRC += tap_dance_defs.c

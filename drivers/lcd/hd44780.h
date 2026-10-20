@@ -21,9 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdbool.h>
 
 /**
- * \file
+ * \defgroup hd44780
  *
- * \defgroup hd44780 HD44780 Character LCD Driver
+ * HD44780 Character LCD Driver
  * \{
  */
 

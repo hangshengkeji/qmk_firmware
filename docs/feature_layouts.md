@@ -37,23 +37,17 @@ New names should try to stick to the standards set by existing layouts, and can 
 
 For a keyboard to support a layout, the variable must be defined in it's `<keyboard>.h`, and match the number of arguments/keys (and preferably the physical layout):
 
-```c
-#define LAYOUT_60_ansi KEYMAP_ANSI
-```
+    #define LAYOUT_60_ansi KEYMAP_ANSI
 
 The name of the layout must match this regex: `[a-z0-9_]+`
 
 The folder name must be added to the keyboard's `rules.mk`:
 
-```
-LAYOUTS = 60_ansi
-```
+    LAYOUTS = 60_ansi
 
 `LAYOUTS` can be set in any keyboard folder level's `rules.mk`:
 
-```
-LAYOUTS = 60_iso
-```
+    LAYOUTS = 60_iso
 
 but the `LAYOUT_<layout>` variable must be defined in `<folder>.h` as well.
 
@@ -61,16 +55,12 @@ but the `LAYOUT_<layout>` variable must be defined in `<folder>.h` as well.
 
 You should be able to build the keyboard keymap with a command in this format:
 
-```
-make <keyboard>:<layout>
-```
+    make <keyboard>:<layout>
 
 ### Conflicting layouts
 When a keyboard supports multiple layout options,
 
-```
-LAYOUTS = ortho_4x4 ortho_4x12
-```
+    LAYOUTS = ortho_4x4 ortho_4x12
 
 And a layout exists for both options,
 ```
@@ -87,10 +77,8 @@ layouts/
 
 The FORCE_LAYOUT argument can be used to specify which layout to build
 
-```
-make <keyboard>:<layout> FORCE_LAYOUT=ortho_4x4
-make <keyboard>:<layout> FORCE_LAYOUT=ortho_4x12
-```
+    make <keyboard>:<layout> FORCE_LAYOUT=ortho_4x4
+    make <keyboard>:<layout> FORCE_LAYOUT=ortho_4x12
 
 ## Tips for Making Layouts Keyboard-Agnostic
 
@@ -98,9 +86,7 @@ make <keyboard>:<layout> FORCE_LAYOUT=ortho_4x12
 
 Instead of using `#include "planck.h"`, you can use this line to include whatever `<keyboard>.h` (`<folder>.h` should not be included here) file that is being compiled:
 
-```c
-#include QMK_KEYBOARD_H
-```
+    #include QMK_KEYBOARD_H
 
 If you want to keep some keyboard-specific code, you can use these variables to escape it with an `#ifdef` statement:
 

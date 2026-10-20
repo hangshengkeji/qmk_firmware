@@ -16,10 +16,7 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stdbool.h>
-#include "action.h"
-#include "steno_keycodes.h"
+#include "quantum.h"
 
 #define BOLT_STROKE_SIZE 4
 #define GEMINI_STROKE_SIZE 6

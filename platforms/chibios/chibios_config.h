@@ -33,65 +33,31 @@
 #    define RP2040_PWM_CHANNEL_A 1U
 #    define RP2040_PWM_CHANNEL_B 2U
 
-#    ifndef BACKLIGHT_PAL_MODE
-#        define BACKLIGHT_PAL_MODE (PAL_MODE_ALTERNATE_PWM | PAL_RP_PAD_DRIVE12 | PAL_RP_GPIO_OE)
-#    endif
+#    define BACKLIGHT_PAL_MODE (PAL_MODE_ALTERNATE_PWM | PAL_RP_PAD_DRIVE12 | PAL_RP_GPIO_OE)
 #    define BACKLIGHT_PWM_COUNTER_FREQUENCY 1000000
-#    ifndef BACKLIGHT_PWM_PERIOD
-#        define BACKLIGHT_PWM_PERIOD BACKLIGHT_PWM_COUNTER_FREQUENCY / 2048
-#    endif
+#    define BACKLIGHT_PWM_PERIOD BACKLIGHT_PWM_COUNTER_FREQUENCY / 2048
 
-#    ifndef AUDIO_PWM_PAL_MODE
-#        define AUDIO_PWM_PAL_MODE (PAL_MODE_ALTERNATE_PWM | PAL_RP_PAD_DRIVE12 | PAL_RP_GPIO_OE)
-#    endif
+#    define AUDIO_PWM_PAL_MODE (PAL_MODE_ALTERNATE_PWM | PAL_RP_PAD_DRIVE12 | PAL_RP_GPIO_OE)
 #    define AUDIO_PWM_COUNTER_FREQUENCY 500000
 
 #    define usb_lld_endpoint_fields
 
-#    ifndef I2C1_SCL_PAL_MODE
-#        define I2C1_SCL_PAL_MODE (PAL_MODE_ALTERNATE_I2C | PAL_RP_PAD_SLEWFAST | PAL_RP_PAD_PUE | PAL_RP_PAD_DRIVE4)
-#    endif
-#    ifndef I2C1_SDA_PAL_MODE
-#        define I2C1_SDA_PAL_MODE (PAL_MODE_ALTERNATE_I2C | PAL_RP_PAD_SLEWFAST | PAL_RP_PAD_PUE | PAL_RP_PAD_DRIVE4)
-#    endif
+#    define I2C1_SCL_PAL_MODE (PAL_MODE_ALTERNATE_I2C | PAL_RP_PAD_SLEWFAST | PAL_RP_PAD_PUE | PAL_RP_PAD_DRIVE4)
+#    define I2C1_SDA_PAL_MODE I2C1_SCL_PAL_MODE
 
 #    define USE_I2CV1_CONTRIB
 #    if !defined(I2C1_CLOCK_SPEED)
 #        define I2C1_CLOCK_SPEED 400000
 #    endif
 
-#    ifndef SPI_SCK_PAL_MODE
-#        define SPI_SCK_PAL_MODE (PAL_MODE_ALTERNATE_SPI | PAL_RP_PAD_SLEWFAST | PAL_RP_PAD_DRIVE4)
-#    endif
-#    ifndef SPI_MOSI_PAL_MODE
-#        define SPI_MOSI_PAL_MODE (PAL_MODE_ALTERNATE_SPI | PAL_RP_PAD_SLEWFAST | PAL_RP_PAD_DRIVE4)
-#    endif
-#    ifndef SPI_MISO_PAL_MODE
-#        define SPI_MISO_PAL_MODE (PAL_MODE_ALTERNATE_SPI | PAL_RP_PAD_SLEWFAST | PAL_RP_PAD_DRIVE4)
-#    endif
-
-#    ifndef UART_TX_PAL_MODE
-#        define UART_TX_PAL_MODE PAL_MODE_ALTERNATE_UART
-#    endif
-#    ifndef UART_RX_PAL_MODE
-#        define UART_RX_PAL_MODE PAL_MODE_ALTERNATE_UART
-#    endif
-#    ifndef UART_CTS_PAL_MODE
-#        define UART_CTS_PAL_MODE PAL_MODE_ALTERNATE_UART
-#    endif
-#    ifndef UART_RTS_PAL_MODE
-#        define UART_RTS_PAL_MODE PAL_MODE_ALTERNATE_UART
-#    endif
-
+#    define SPI_SCK_PAL_MODE (PAL_MODE_ALTERNATE_SPI | PAL_RP_PAD_SLEWFAST | PAL_RP_PAD_DRIVE4)
+#    define SPI_MOSI_PAL_MODE SPI_SCK_PAL_MODE
+#    define SPI_MISO_PAL_MODE SPI_SCK_PAL_MODE
 #endif
 
 // STM32 compatibility
 #if defined(MCU_STM32)
-#    if defined(STM32_CORE_CK)
-#        define CPU_CLOCK STM32_CORE_CK
-#    else
-#        define CPU_CLOCK STM32_SYSCLK
-#    endif
+#    define CPU_CLOCK STM32_SYSCLK
 
 #    if defined(STM32F1XX)
 #        define USE_GPIOV1
@@ -108,11 +74,6 @@
 #    if defined(STM32F1XX) || defined(STM32F2XX) || defined(STM32F4XX) || defined(STM32L1XX)
 #        define USE_I2CV1
 #    endif
-
-#    if defined(STM32G0XX) || defined(STM32G4XX) || defined(STM32L5XX) || defined(STM32H7XX)
-#        define USE_USARTV3
-#    endif
-
 #endif
 
 // GD32 compatibility

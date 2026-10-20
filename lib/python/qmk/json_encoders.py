@@ -27,56 +27,30 @@ class QMKJSONEncoder(json.JSONEncoder):
 
         return float(obj)
 
-    def encode_dict(self, obj, path):
-        """Encode a dict-like object.
-        """
-        if obj:
-            self.indentation_level += 1
-
-            items = sorted(obj.items(), key=self.sort_dict) if self.sort_keys else obj.items()
-            output = [self.indent_str + f"{json.dumps(key)}: {self.encode(value, path + [key])}" for key, value in items]
-
-            self.indentation_level -= 1
-
-            return "{\n" + ",\n".join(output) + "\n" + self.indent_str + "}"
-        else:
-            return "{}"
-
-    def encode_dict_single_line(self, obj, path):
-        """Encode a dict-like object onto a single line.
-        """
-        return "{" + ", ".join(f"{json.dumps(key)}: {self.encode(value, path + [key])}" for key, value in sorted(obj.items(), key=self.sort_layout)) + "}"
-
-    def encode_list(self, obj, path):
+    def encode_list(self, obj):
         """Encode a list-like object.
         """
         if self.primitives_only(obj):
-            return "[" + ", ".join(self.encode(value, path + [index]) for index, value in enumerate(obj)) + "]"
+            return "[" + ", ".join(self.encode(element) for element in obj) + "]"
 
         else:
             self.indentation_level += 1
-
-            if path[-1] in ('layout', 'rotary'):
-                # These are part of a LED layout or encoder config, put them on a single line
-                output = [self.indent_str + self.encode_dict_single_line(value, path + [index]) for index, value in enumerate(obj)]
-            else:
-                output = [self.indent_str + self.encode(value, path + [index]) for index, value in enumerate(obj)]
-
+            output = [self.indent_str + self.encode(element) for element in obj]
             self.indentation_level -= 1
 
             return "[\n" + ",\n".join(output) + "\n" + self.indent_str + "]"
 
-    def encode(self, obj, path=[]):
-        """Encode JSON objects for QMK.
+    def encode(self, obj):
+        """Encode keymap.json objects for QMK.
         """
         if isinstance(obj, Decimal):
             return self.encode_decimal(obj)
 
         elif isinstance(obj, (list, tuple)):
-            return self.encode_list(obj, path)
+            return self.encode_list(obj)
 
         elif isinstance(obj, dict):
-            return self.encode_dict(obj, path)
+            return self.encode_dict(obj)
 
         else:
             return super().encode(obj)
@@ -97,42 +71,30 @@ class QMKJSONEncoder(json.JSONEncoder):
 class InfoJSONEncoder(QMKJSONEncoder):
     """Custom encoder to make info.json's a little nicer to work with.
     """
-    def sort_layout(self, item):
-        """Sorts the hashes in a nice way.
+    def encode_dict(self, obj):
+        """Encode info.json dictionaries.
         """
-        key = item[0]
+        if obj:
+            if set(("x", "y")).issubset(obj.keys()):
+                # These are part of a layout/led_config, put them on a single line.
+                return "{ " + ", ".join(f"{self.encode(key)}: {self.encode(element)}" for key, element in sorted(obj.items())) + " }"
 
-        if key == 'label':
-            return '00label'
+            else:
+                self.indentation_level += 1
+                output = [self.indent_str + f"{json.dumps(key)}: {self.encode(value)}" for key, value in sorted(obj.items(), key=self.sort_dict)]
+                self.indentation_level -= 1
+                return "{\n" + ",\n".join(output) + "\n" + self.indent_str + "}"
+        else:
+            return "{}"
 
-        elif key == 'matrix':
-            return '01matrix'
-
-        elif key == 'x':
-            return '02x'
-
-        elif key == 'y':
-            return '03y'
-
-        elif key == 'w':
-            return '04w'
-
-        elif key == 'h':
-            return '05h'
-
-        elif key == 'flags':
-            return '06flags'
-
-        return key
-
-    def sort_dict(self, item):
+    def sort_dict(self, key):
         """Forces layout to the back of the sort order.
         """
-        key = item[0]
+        key = key[0]
 
         if self.indentation_level == 1:
             if key == 'manufacturer':
-                return '10manufacturer'
+                return '10keyboard_name'
 
             elif key == 'keyboard_name':
                 return '11keyboard_name'
@@ -158,7 +120,21 @@ class InfoJSONEncoder(QMKJSONEncoder):
 class KeymapJSONEncoder(QMKJSONEncoder):
     """Custom encoder to make keymap.json's a little nicer to work with.
     """
-    def encode_list(self, obj, path):
+    def encode_dict(self, obj):
+        """Encode dictionary objects for keymap.json.
+        """
+        if obj:
+            self.indentation_level += 1
+            output_lines = [f"{self.indent_str}{json.dumps(key)}: {self.encode(value)}" for key, value in sorted(obj.items(), key=self.sort_dict)]
+            output = ',\n'.join(output_lines)
+            self.indentation_level -= 1
+
+            return f"{{\n{output}\n{self.indent_str}}}"
+
+        else:
+            return "{}"
+
+    def encode_list(self, obj):
         """Encode a list-like object.
         """
         if self.indentation_level == 2:
@@ -192,10 +168,10 @@ class KeymapJSONEncoder(QMKJSONEncoder):
 
             return "[\n" + ",\n".join(output) + "\n" + self.indent_str + "]"
 
-    def sort_dict(self, item):
+    def sort_dict(self, key):
         """Sorts the hashes in a nice way.
         """
-        key = item[0]
+        key = key[0]
 
         if self.indentation_level == 1:
             if key == 'version':
@@ -215,23 +191,5 @@ class KeymapJSONEncoder(QMKJSONEncoder):
 
             else:
                 return '50' + str(key)
-
-        return key
-
-
-class UserspaceJSONEncoder(QMKJSONEncoder):
-    """Custom encoder to make userspace qmk.json's a little nicer to work with.
-    """
-    def sort_dict(self, item):
-        """Sorts the hashes in a nice way.
-        """
-        key = item[0]
-
-        if self.indentation_level == 1:
-            if key == 'userspace_version':
-                return '00userspace_version'
-
-            if key == 'build_targets':
-                return '01build_targets'
 
         return key

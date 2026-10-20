@@ -18,13 +18,13 @@
 
 #include "timer.h"
 
-static bool spiStarted = false;
+static pin_t currentSlavePin = NO_PIN;
 
-#if SPI_SELECT_MODE == SPI_SELECT_MODE_NONE
-static pin_t currentSlavePin;
+#if defined(K20x) || defined(KL2x) || defined(RP2040)
+static SPIConfig spiConfig = {NULL, 0, 0, 0};
+#else
+static SPIConfig spiConfig = {false, NULL, 0, 0, 0, 0};
 #endif
-
-static SPIConfig spiConfig;
 
 __attribute__((weak)) void spi_init(void) {
     static bool is_initialised = false;
@@ -32,51 +32,29 @@ __attribute__((weak)) void spi_init(void) {
         is_initialised = true;
 
         // Try releasing special pins for a short time
-        gpio_set_pin_input(SPI_SCK_PIN);
-        if (SPI_MOSI_PIN != NO_PIN) {
-            gpio_set_pin_input(SPI_MOSI_PIN);
-        }
-        if (SPI_MISO_PIN != NO_PIN) {
-            gpio_set_pin_input(SPI_MISO_PIN);
-        }
+        setPinInput(SPI_SCK_PIN);
+        setPinInput(SPI_MOSI_PIN);
+        setPinInput(SPI_MISO_PIN);
 
         chThdSleepMilliseconds(10);
 #if defined(USE_GPIOV1)
         palSetPadMode(PAL_PORT(SPI_SCK_PIN), PAL_PAD(SPI_SCK_PIN), SPI_SCK_PAL_MODE);
-        if (SPI_MOSI_PIN != NO_PIN) {
-            palSetPadMode(PAL_PORT(SPI_MOSI_PIN), PAL_PAD(SPI_MOSI_PIN), SPI_MOSI_PAL_MODE);
-        }
-        if (SPI_MISO_PIN != NO_PIN) {
-            palSetPadMode(PAL_PORT(SPI_MISO_PIN), PAL_PAD(SPI_MISO_PIN), SPI_MISO_PAL_MODE);
-        }
+        palSetPadMode(PAL_PORT(SPI_MOSI_PIN), PAL_PAD(SPI_MOSI_PIN), SPI_MOSI_PAL_MODE);
+        palSetPadMode(PAL_PORT(SPI_MISO_PIN), PAL_PAD(SPI_MISO_PIN), SPI_MISO_PAL_MODE);
 #else
         palSetPadMode(PAL_PORT(SPI_SCK_PIN), PAL_PAD(SPI_SCK_PIN), SPI_SCK_FLAGS);
-        if (SPI_MOSI_PIN != NO_PIN) {
-            palSetPadMode(PAL_PORT(SPI_MOSI_PIN), PAL_PAD(SPI_MOSI_PIN), SPI_MOSI_FLAGS);
-        }
-        if (SPI_MISO_PIN != NO_PIN) {
-            palSetPadMode(PAL_PORT(SPI_MISO_PIN), PAL_PAD(SPI_MISO_PIN), SPI_MISO_FLAGS);
-        }
+        palSetPadMode(PAL_PORT(SPI_MOSI_PIN), PAL_PAD(SPI_MOSI_PIN), SPI_MOSI_FLAGS);
+        palSetPadMode(PAL_PORT(SPI_MISO_PIN), PAL_PAD(SPI_MISO_PIN), SPI_MISO_FLAGS);
 #endif
         spiStop(&SPI_DRIVER);
-        spiStarted = false;
+        currentSlavePin = NO_PIN;
     }
 }
 
 bool spi_start(pin_t slavePin, bool lsbFirst, uint8_t mode, uint16_t divisor) {
-#if (SPI_USE_MUTUAL_EXCLUSION == TRUE)
-    spiAcquireBus(&SPI_DRIVER);
-#endif // (SPI_USE_MUTUAL_EXCLUSION == TRUE)
-
-    if (spiStarted) {
+    if (currentSlavePin != NO_PIN || slavePin == NO_PIN) {
         return false;
     }
-
-#if SPI_SELECT_MODE != SPI_SELECT_MODE_NONE
-    if (slavePin == NO_PIN) {
-        return false;
-    }
-#endif
 
 #if !(defined(WB32F3G71xx) || defined(WB32FQ95xx))
     uint16_t roundedDivisor = 2;
@@ -269,29 +247,13 @@ bool spi_start(pin_t slavePin, bool lsbFirst, uint8_t mode, uint16_t divisor) {
     }
 #endif
 
-    spiStarted = true;
-#if SPI_SELECT_MODE == SPI_SELECT_MODE_NONE
-    currentSlavePin = slavePin;
-#endif
-#if SPI_SELECT_MODE == SPI_SELECT_MODE_PAD
+    currentSlavePin  = slavePin;
     spiConfig.ssport = PAL_PORT(slavePin);
     spiConfig.sspad  = PAL_PAD(slavePin);
-    gpio_set_pin_output(slavePin);
-#elif SPI_SELECT_MODE == SPI_SELECT_MODE_NONE
-    if (slavePin != NO_PIN) {
-        gpio_set_pin_output(slavePin);
-    }
-#else
-#    error "Unsupported SPI_SELECT_MODE"
-#endif
 
+    setPinOutput(slavePin);
     spiStart(&SPI_DRIVER, &spiConfig);
     spiSelect(&SPI_DRIVER);
-#if SPI_SELECT_MODE == SPI_SELECT_MODE_NONE
-    if (slavePin != NO_PIN) {
-        gpio_write_pin_low(slavePin);
-    }
-#endif
 
     return true;
 }
@@ -321,18 +283,9 @@ spi_status_t spi_receive(uint8_t *data, uint16_t length) {
 }
 
 void spi_stop(void) {
-    if (spiStarted) {
-#if SPI_SELECT_MODE == SPI_SELECT_MODE_NONE
-        if (currentSlavePin != NO_PIN) {
-            gpio_write_pin_high(currentSlavePin);
-        }
-#endif
+    if (currentSlavePin != NO_PIN) {
         spiUnselect(&SPI_DRIVER);
         spiStop(&SPI_DRIVER);
-        spiStarted = false;
+        currentSlavePin = NO_PIN;
     }
-
-#if (SPI_USE_MUTUAL_EXCLUSION == TRUE)
-    spiReleaseBus(&SPI_DRIVER);
-#endif // (SPI_USE_MUTUAL_EXCLUSION == TRUE)
 }

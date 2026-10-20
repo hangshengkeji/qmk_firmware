@@ -1,0 +1,368 @@
+/* Copyright 2021 Glorious, LLC <salman@pcgamingrace.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+/* USB */
+#define MANUFACTURER "HS"       // 键盘制造商
+#define PRODUCT "MD770 PRO JIS" // 键盘名称
+#define VENDOR_ID 0x342d        // USB VID
+#define PRODUCT_ID 0xe583       // USB PID
+#define DEVICE_VER 0x0012       // 版本号
+//#define FORCE_NKRO // 打开为默认全键无冲 关闭为默认六建无冲
+#define USB_SUSPEND_WAKEUP_DELAY 1000 // USB 休眠唤醒等待时间
+
+#define MM_WAKEUP_DELAY 5
+
+/* Multimode */
+#ifdef MULTIMODE_ENABLE
+#    define MM_USB_EN_PIN B1
+#    define MM_USB_EN_STATE 0
+
+// 二档开关模式控制
+// #    define MM_MODE_SW_PIN C14
+// #    define MM_USB_MODE_STATE 0
+
+// 三档开关模式控制
+#    define MM_BT_DEF_PIN C15
+#    define MM_2G4_DEF_PIN C14
+#    define MM_BT_PIN_STATE 1, 1
+#    define MM_2G4_PIN_STATE 0, 1
+#    define MM_USB_PIN_STATE 1, 0
+#    define MM_USB_AUTO_SLEEP_DISABLE
+#    define IM_MM_USB_TIMES 1
+// #    define LP_UART_WAKEUP
+#    define VIA_EEPROM_ALLOW_RESET
+
+#    define MM_BAT_CABLE_PIN A7
+
+#    define MM_BT1_NAME "MD770 PRO JIS-1" // 蓝牙1名称
+#    define MM_BT2_NAME "MD770 PRO JIS-2"
+#    define MM_BT3_NAME "MD770 PRO JIS-3"
+
+#    define MM_DONGLE_PRODUCT "MD770 PRO JIS 2.4G"
+
+#    define RGB_MATRIX_BAT_INDEX_MAP {48, 49, 50, 51, 52}
+
+#    define MM_SLEEP_TIMEOUT (10 * 60000) // 10 min
+
+#    define RGB_DRIVER_EN_PIN C7
+#    define RGB_DRIVER_EN_STATE 1 // RGB 使能引脚默认高电平
+
+#    define IM_LKEY_COUNT 3 // 用户自定义长按按键数量
+
+#    define RGB_MATRIX_BLINK_COUNT 13
+#    define IM_MM_RGB_BLINK_INDEX_CAPS 20
+#    define IM_MM_RGB_BLINK_INDEX_GUI 82
+#    define IM_MM_RGB_BLINK_INDEX_NKRO 32
+
+#    define RGB_MATRIX_BLINK_INDEX_BAT 254
+#    define RGB_MATRIX_BLINK_INDEX_BAT_FLAG 0
+#    define RGB_MATRIX_BLINK_INDEX_ALL 0xFD
+
+#    define IM_MM_RGB_BLINK_INDEX_MIXED 0xFC
+// #    define IM_MM_RGB_BLINK_INDEX_BT1 14 // 蓝牙1 索引
+// #    define IM_MM_RGB_BLINK_INDEX_BT2 13 // 蓝牙2 索引
+// #    define IM_MM_RGB_BLINK_INDEX_BT3 12 // 蓝牙3 索引
+// #    define IM_MM_RGB_BLINK_INDEX_2G4 11 // 2.4G  索引
+// #    define IM_MM_RGB_BLINK_INDEX_USB 6
+
+#    define IM_MM_LBACK_TIMEOUT (30 * 1000)
+#    define IM_MM_PAIR_TIMEOUT (60 * 1000)
+#    define IM_MM_SUCCEED_TIME (2 * 1000)
+
+#    define IM_MM_LBACK_COLOR_BT1  0x00, 0x00, 0xFF                              //0x00, 0x00, 0x15
+#    define IM_MM_LBACK_COLOR_BT2  RGB_ORANGE
+#    define IM_MM_LBACK_COLOR_BT3  0xFF, 0x00, 0xFF
+#    define IM_MM_LBACK_COLOR_2G4  0x00, 0xFF, 0x00
+#    define IM_MM_LBACK_COLOR_USB  0xFF, 0xFF, 0xFF
+
+#    define IM_MM_PAIR_COLOR_BT1 IM_MM_LBACK_COLOR_BT1
+#    define IM_MM_PAIR_COLOR_BT2 IM_MM_LBACK_COLOR_BT2
+#    define IM_MM_PAIR_COLOR_BT3 IM_MM_LBACK_COLOR_BT3
+#    define IM_MM_PAIR_COLOR_2G4 IM_MM_LBACK_COLOR_2G4
+#    define IM_MM_PAIR_COLOR_USB IM_MM_LBACK_COLOR_USB
+#    define IM_BAT_REQ_LEVEL2_VAL 0
+#    define IM_BAT_REQ_LEVEL2_COLOR RGB_MATRIX_BAT_VAL, 0x00, 0x00
+#define IM_RGB_BAT_REQ_CLOSE_ALL
+
+#endif
+
+/* Status Indicator Lamp */
+#define MM_USB_ROUTINE_SLEEP_DISABLE
+#define SHUTDOWN_ENABLE
+#define LP_ROW_PINS C13
+#define LP_COL_PINS C3
+
+#define SPLIT_MAX_CONNECTION_ERRORS 1
+#define SPLIT_CONNECTION_CHECK_TIMEOUT 100
+
+/* Encoder */
+// #define ENCODERS_PAD_A_INT_DISABLE
+// #define ENCODERS_PAD_B_INT_DISABLE
+#define ENCODERS_PAD_A {  }
+#define ENCODERS_PAD_B {  }
+
+#define HS_ENCODERS_PAD_A B9
+#define HS_ENCODERS_PAD_B B8
+#define ENCODER_RESOLUTIONS_RIGHT { 2 }
+#define ENCODERS_PAD_A_RIGHT { B9 }
+#define ENCODERS_PAD_B_RIGHT { B8 }
+#define ENCODER_RESOLUTIONS { 2 }
+#define ENCODER_MAP_KEY_DELAY 1
+#define ENCODER_DEFAULT_POS 0x3
+
+/*  IIC INIT */
+#define I2C_DRIVER        I2CD1
+#define I2C1_OPMODE       OPMODE_I2C
+#define I2C1_CLOCK_SPEED  100000
+
+#define DYNAMIC_KEYMAP_LAYER_COUNT 5 // layer count
+
+#define IM_MM_RGB_BLINK_INDEX_VAI 82
+#define IM_MM_RGB_BLINK_INDEX_VAD 83
+#define IM_MM_RGB_BLINK_INDEX_SPI 84
+#define IM_MM_RGB_BLINK_INDEX_SPD 77
+#define IM_MM_RGB_BLINK_INDEX_WIN 21
+#define IM_MM_RGB_BLINK_INDEX_MAC 22
+#define IM_MM_RGB_BLINK_INDEX_IND 250
+// #define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR (DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR + 200)
+/* UART */
+#define SERIAL_DRIVER SD3
+#define SD1_TX_PIN C10
+#define SD1_RX_PIN C11
+#define SELECT_SOFT_SERIAL_SPEED 1
+
+/* DEBOUNCE */
+#define DEBOUNCE 2
+#define TAP_CODE_DELAY 1
+#define HOLD_ON_OTHER_KEY_PRESS
+
+/* Key Matrix */
+#define MATRIX_ROWS 12
+#define MATRIX_COLS 9
+#define DIODE_DIRECTION ROW2COL
+#define MATRIX_COL_PINS \
+    { C0, C1, C2, C3, A6, B10, B11, B12, B13}  //no
+#define MATRIX_ROW_PINS \
+    { A0, A1, A2, A3, A4, C13 }
+#define MATRIX_ROW_PINS_RIGHT {A0, A1, A2, A3, A4, C13}
+#define MATRIX_COL_PINS_RIGHT { C0, C1, C2, C3, A6, B10, B11, B12, B13}
+
+// #define RGBREC_CHANNEL_NUM 4 // 录制灯效数量
+#define EECONFIG_CONFINFO_USE_SIZE (4 + 16) // 用户存储区大小
+#define BAT_FULL_PIN D2
+/* Flash */
+#define EXTERNAL_FLASH_SPI_SLAVE_SELECT_PIN C12
+#define WEAR_LEVELING_BACKING_SIZE (8 * 1024)
+#define WEAR_LEVELING_LOGICAL_SIZE (WEAR_LEVELING_BACKING_SIZE / 2)
+#define FEE_PAGE_COUNT (WEAR_LEVELING_BACKING_SIZE / FEE_PAGE_SIZE)
+
+
+// 固定，不要动
+// #define EECONFIG_RGBREC_USE_SIZE (RGBREC_CHANNEL_NUM * MATRIX_ROWS * MATRIX_COLS * 2)
+#define EECONFIG_USER_DATA_SIZE (EECONFIG_CONFINFO_USE_SIZE)
+#define RGBREC_EECONFIG_ADDR (uint8_t *)(EECONFIG_USER_DATABLOCK)
+#define CONFINFO_EECONFIG_ADDR (uint32_t *)((uint32_t)RGBREC_EECONFIG_ADDR)
+
+#define RGB_RECORD_HS_LISTS \
+    { HS_BLACK,HS_RED,HS_GREEN,HS_BLUE,HS_YELLOW,HS_PURPLE,HS_CYAN,HS_WHITE }
+
+/*serial usart config for split communication*/
+#define SERIAL_USART_DRIVER SD1
+#define SERIAL_USART_TX_PIN A9
+#define SERIAL_USART_RX_PIN A10
+#define SERIAL_USART_CONFIG {115200, 3, 0, 0, 0};
+#define SERIAL_USART_FULL_DUPLEX
+#define SELECT_SOFT_SERIAL_SPEED 1
+#define SERIAL_DEBUG
+// #define GMK33
+// #define RGBLIGHT_SPLIT
+
+/*for split keyboard detect left hand or right hand*/
+#define SPLIT_HAND_PIN A15
+#define MASTER_LEFT
+#define RGB_MATRIX_SPLIT { 39, 52 }
+#define SPLIT_TRANSPORT_MIRROR
+#define SPLIT_LAYER_STATE_ENABLE
+#define SPLIT_LED_STATE_ENABLE
+#define SPLIT_MODS_ENABLE
+#define SPLIT_TRANSACTION_IDS_USER USER_SYNC_MMS    //multimode status
+
+
+/* SPI Config for LED Driver */
+#define SPI_DRIVER SPIDQ
+#define SPI_SCK_PIN B3
+#define SPI_MOSI_PIN B5
+#define SPI_MISO_PIN B4
+
+/* led */
+#define LED1_R B15
+#define LED1_G B14
+#define LED1_B C6
+
+
+#define PWM_DUTY                         500
+#define HS_PWM_TARGET_PERIOD 36000 // TODO: work out why 10x less on f303/f4x1
+#define HS_PWM_FREQUENCY (CPU_CLOCK / 2)// CPU_CLOCK:72MHZ                   /**< Clock frequency of PWM, must be valid with respect to system clock! */
+#define HS_PWM_PERIOD (HS_PWM_FREQUENCY / HS_PWM_TARGET_PERIOD) /**< Clock period in ticks. 1 / 800kHz = 1.25 uS (as per datasheet) */
+#define HS_PWM_CHANNEL_1 1
+#define HS_PWM_CHANNEL_2 2
+#define HS_PWM_CHANNEL_3 3
+#define HS_PWM_DRIVER_1 PWMD1
+#define HS_PWM_DRIVER_2 PWMD3
+
+/* RGB Matrix */
+// #define RGB_DI_PIN B15
+// #define WS2812_SPI SPIDM2
+// #define WS2812_SPI_DIVISOR 24
+
+#define DRIVER_1_CS C8
+#define DRIVER_1_EN C7
+
+#define DRIVER_2_CS A5
+#define DRIVER_2_EN C7
+
+#define DRIVER_COUNT 2
+#define DRIVER_1_LED_TOTAL 39            // 37
+#define DRIVER_2_LED_TOTAL 52            // 48
+#define RGB_MATRIX_LED_COUNT                (DRIVER_1_LED_TOTAL + DRIVER_2_LED_TOTAL) // 灯珠数量
+
+
+#define RGB_MATRIX_MAXIMUM_BRIGHTNESS 255  //150 200
+#define RGB_MATRIX_STARTUP_MODE 13
+#define RGB_MATRIX_DEFAULT_SAT 255
+#define RGB_MATRIX_DEFAULT_HUE 255
+#define RGB_MATRIX_VAL_STEP (RGB_MATRIX_MAXIMUM_BRIGHTNESS/5)
+#define RGB_MATRIX_DEFAULT_VAL (RGB_MATRIX_VAL_STEP * 5)
+
+#define RGB_MATRIX_SPD_STEP 51 // 速度步长
+#define RGB_MATRIX_HUE_STEP 25
+#define RGB_MATRIX_SAT_STEP 25
+
+#define RGB_MATRIX_DEFAULT_SPD (RGB_MATRIX_SPD_STEP * 3)
+#define RGB_DISABLE_WHEN_USB_SUSPENDED
+#define RGB_MATRIX_FRAMEBUFFER_EFFECTS
+#define RGB_MATRIX_KEYPRESSES
+#define RGB_TRIGGER_ON_KEYDOWN
+
+#define ENABLE_RGB_MATRIX_RGBR_PLAY
+
+#define RGBLED_NUM 6 // 侧灯数量
+#define RGBLIGHT_DEFAULT_MODE 14
+#define RGBLIGHT_LIMIT_VAL  80 // 侧灯亮度
+#define RGBLIGHT_HUE_STEP 32 // 侧灯色相步长
+#define RGBLIGHT_SAT_STEP 8 // 侧灯 饱和度步长
+#define RGBLIGHT_VAL_STEP 50 // 侧灯亮度步长
+// #define RGBLIGHT_SLEEP // 侧灯休眠
+#define LED_ARRAY led
+// #define RGBLIGHT_LED_MAP {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+/* 这个宏定义表示主灯和侧灯分别调节 */
+#define RGBLIGHT_DISABLE_KEYCODES
+#define custom_rgblight_effect_rainbow_swirl   //流光
+// #define custom_rgblight_effect_rainbow_mood    //霓虹
+#define custom_rgblight_effect_breathe_table   //呼吸
+#define breathing_val 70
+#define rainbow_mood 70
+/* RGB Lighting effects*/
+#define RGBLIGHT_ANIMATIONS
+#define RGBLIGHT_EFFECT_ALTERNATING
+#define RGBLIGHT_EFFECT_BREATHING
+#define RGBLIGHT_EFFECT_CHRISTMAS
+#define RGBLIGHT_EFFECT_KNIGHT
+#define RGBLIGHT_EFFECT_RAINBOW_MOOD
+#define RGBLIGHT_EFFECT_RAINBOW_SWIRL
+#define RGBLIGHT_EFFECT_RGB_TEST
+#define RGBLIGHT_EFFECT_SNAKE
+#define RGBLIGHT_EFFECT_STATIC_GRADIENT
+#define RGBLIGHT_EFFECT_TWINKLE
+
+
+// RGB Matrix Animation modes. Explicitly enabled
+// For full list of effects, see:
+// https://docs.qmk.fm/#/feature_rgb_matrix?id=rgb-matrix-effects
+#define ENABLE_RGB_MATRIX_ALPHAS_MODS
+#define ENABLE_RGB_MATRIX_GRADIENT_UP_DOWN
+#define ENABLE_RGB_MATRIX_GRADIENT_LEFT_RIGHT
+#define ENABLE_RGB_MATRIX_BREATHING
+#define ENABLE_RGB_MATRIX_BAND_SAT
+#define ENABLE_RGB_MATRIX_BAND_VAL
+#define ENABLE_RGB_MATRIX_BAND_PINWHEEL_SAT
+#define ENABLE_RGB_MATRIX_BAND_PINWHEEL_VAL
+#define ENABLE_RGB_MATRIX_BAND_SPIRAL_SAT
+#define ENABLE_RGB_MATRIX_BAND_SPIRAL_VAL
+#define ENABLE_RGB_MATRIX_CYCLE_ALL
+#define ENABLE_RGB_MATRIX_CYCLE_LEFT_RIGHT
+#define ENABLE_RGB_MATRIX_CYCLE_UP_DOWN
+#define ENABLE_RGB_MATRIX_RAINBOW_MOVING_CHEVRON
+#define ENABLE_RGB_MATRIX_CYCLE_OUT_IN
+#define ENABLE_RGB_MATRIX_CYCLE_OUT_IN_DUAL
+#define ENABLE_RGB_MATRIX_CYCLE_PINWHEEL
+#define ENABLE_RGB_MATRIX_CYCLE_SPIRAL
+#define ENABLE_RGB_MATRIX_DUAL_BEACON
+#define ENABLE_RGB_MATRIX_RAINBOW_BEACON
+#define ENABLE_RGB_MATRIX_RAINBOW_PINWHEELS
+#define ENABLE_RGB_MATRIX_RAINDROPS
+#define ENABLE_RGB_MATRIX_JELLYBEAN_RAINDROPS
+#define ENABLE_RGB_MATRIX_HUE_BREATHING
+#define ENABLE_RGB_MATRIX_HUE_PENDULUM
+#define ENABLE_RGB_MATRIX_HUE_WAVE
+#define ENABLE_RGB_MATRIX_PIXEL_RAIN
+#define ENABLE_RGB_MATRIX_PIXEL_FLOW
+#define ENABLE_RGB_MATRIX_PIXEL_FRACTAL
+// enabled only if RGB_MATRIX_FRAMEBUFFER_EFFECTS is defined
+#define ENABLE_RGB_MATRIX_TYPING_HEATMAP
+#define ENABLE_RGB_MATRIX_DIGITAL_RAIN
+// enabled only of RGB_MATRIX_KEYPRESSES or RGB_MATRIX_KEYRELEASES is defined
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE_SIMPLE
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE_WIDE
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE_MULTIWIDE
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE_CROSS
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE_MULTICROSS
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE_NEXUS
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE_MULTINEXUS
+#define ENABLE_RGB_MATRIX_SPLASH
+#define ENABLE_RGB_MATRIX_MULTISPLASH
+#define ENABLE_RGB_MATRIX_SOLID_SPLASH
+#define ENABLE_RGB_MATRIX_SOLID_MULTISPLASH
+#define ENABLE_RGB_MATRIX_GRADIENT_UP_DOWN
+#define ENABLE_RGB_MATRIX_BREATHING
+#define ENABLE_RGB_MATRIX_BAND_SAT
+#define ENABLE_RGB_MATRIX_BAND_PINWHEEL_SAT
+#define ENABLE_RGB_MATRIX_CYCLE_LEFT_RIGHT
+#define ENABLE_RGB_MATRIX_RAINBOW_MOVING_CHEVRON
+#define ENABLE_RGB_MATRIX_CYCLE_OUT_IN
+#define ENABLE_RGB_MATRIX_CYCLE_PINWHEEL
+#define ENABLE_RGB_MATRIX_CYCLE_SPIRAL
+#define ENABLE_RGB_MATRIX_RAINBOW_PINWHEELS
+#define ENABLE_RGB_MATRIX_JELLYBEAN_RAINDROPS
+#define ENABLE_RGB_MATRIX_PIXEL_FLOW
+#define ENABLE_RGB_MATRIX_TYPING_HEATMAP
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE_SIMPLE
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE_MULTIWIDE
+#define ENABLE_RGB_MATRIX_SOLID_REACTIVE_MULTICROSS
+#define ENABLE_RGB_MATRIX_MULTISPLASH
+#define ENABLE_RGB_MATRIX_SOLID_SPLASH
+
+
+#    define BOOTMAGIC_LITE_COLUMN 0
+#    define BOOTMAGIC_LITE_ROW 0
+
+#    define BOOTMAGIC_LITE_COLUMN_RIGHT 8
+#    define BOOTMAGIC_LITE_ROW_RIGHT 7
+// #define WS2812_BYTE_ORDER WS2812_BYTE_ORDER_RGB

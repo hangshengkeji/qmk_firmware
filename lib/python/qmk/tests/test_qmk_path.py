@@ -5,8 +5,8 @@ import qmk.path
 
 
 def test_keymap_pytest_basic():
-    path = qmk.path.keymap('handwired/pytest/basic', 'default')
-    assert path.samefile('keyboards/handwired/pytest/basic/keymaps/default')
+    path = qmk.path.keymap('handwired/pytest/basic')
+    assert path.samefile('keyboards/handwired/pytest/basic/keymaps')
 
 
 def test_normpath():

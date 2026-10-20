@@ -16,11 +16,9 @@
 
 #pragma once
 
+#include "progmem.h"
+#include "quantum.h"
 #include <stdint.h>
-#include <stdbool.h>
-#include "action.h"
-#include "keycodes.h"
-#include "quantum_keycodes.h"
 
 #ifdef EXTRA_SHORT_COMBOS
 #    define MAX_COMBO_LENGTH 6
@@ -39,7 +37,7 @@
 #    define COMBO_BUFFER_LENGTH 4
 #endif
 
-typedef struct combo_t {
+typedef struct {
     const uint16_t *keys;
     uint16_t        keycode;
 #ifdef EXTRA_SHORT_COMBOS

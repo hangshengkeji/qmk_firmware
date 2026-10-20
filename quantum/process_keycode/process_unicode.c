@@ -16,7 +16,6 @@
 
 #include "process_unicode.h"
 #include "unicode.h"
-#include "keycodes.h"
 #include "quantum_keycodes.h"
 
 bool process_unicode(uint16_t keycode, keyrecord_t *record) {

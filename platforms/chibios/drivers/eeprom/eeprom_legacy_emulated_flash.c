@@ -24,7 +24,6 @@
 #include "debug.h"
 #include "eeprom_legacy_emulated_flash.h"
 #include "legacy_flash_ops.h"
-#include "eeprom_driver.h"
 
 /*
  * We emulate eeprom by writing a snapshot compacted view of eeprom contents,
@@ -563,12 +562,6 @@ uint16_t EEPROM_ReadDataWord(uint16_t Address) {
  *******************************************************************************/
 void eeprom_driver_init(void) {
     EEPROM_Init();
-}
-
-void eeprom_driver_format(bool erase) {
-    /* emulated eepron requires the write log data structures to be erased before use. */
-    (void)erase;
-    eeprom_driver_erase();
 }
 
 void eeprom_driver_erase(void) {

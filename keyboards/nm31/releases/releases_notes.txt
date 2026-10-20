@@ -1,0 +1,7 @@
+1.nm31_via_v1.hex                            版本号：0x0001
+	1.first commit
+
+2.nm31_via_v2.hex                            版本号：0x0002
+	1.增加灯控
+
+

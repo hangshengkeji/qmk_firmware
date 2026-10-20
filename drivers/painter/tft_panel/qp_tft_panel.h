@@ -1,6 +1,5 @@
 // Copyright 2021 Nick Brassel (@tzarc)
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma once
 
 #include "color.h"
 #include "qp_internal.h"
@@ -13,8 +12,8 @@
 // Common TFT panel implementation using D/C, and RST pins.
 
 // Driver vtable with extras
-typedef struct tft_panel_dc_reset_painter_driver_vtable_t {
-    painter_driver_vtable_t base; // must be first, so it can be cast to/from the painter_driver_vtable_t* type
+struct tft_panel_dc_reset_painter_driver_vtable_t {
+    struct painter_driver_vtable_t base; // must be first, so it can be cast to/from the painter_driver_vtable_t* type
 
     // Number of bytes for transmitting x/y coordinates
     uint8_t num_window_bytes;
@@ -30,16 +29,16 @@ typedef struct tft_panel_dc_reset_painter_driver_vtable_t {
         uint8_t set_row_address;
         uint8_t enable_writes;
     } opcodes;
-} tft_panel_dc_reset_painter_driver_vtable_t;
+};
 
 // Device definition
 typedef struct tft_panel_dc_reset_painter_device_t {
-    painter_driver_t base; // must be first, so it can be cast to/from the painter_device_t* type
+    struct painter_driver_t base; // must be first, so it can be cast to/from the painter_device_t* type
 
     union {
 #ifdef QUANTUM_PAINTER_SPI_ENABLE
         // SPI-based configurables
-        qp_comms_spi_dc_reset_config_t spi_dc_reset_config;
+        struct qp_comms_spi_dc_reset_config_t spi_dc_reset_config;
 #endif // QUANTUM_PAINTER_SPI_ENABLE
 
         // TODO: I2C/parallel etc.

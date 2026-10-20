@@ -14,8 +14,8 @@ from qmk.git import git_get_username
 from qmk.json_schema import load_jsonschema
 from qmk.path import keyboard
 from qmk.json_encoders import InfoJSONEncoder
-from qmk.json_schema import deep_update
-from qmk.constants import MCU2BOOTLOADER, QMK_FIRMWARE
+from qmk.json_schema import deep_update, json_load
+from qmk.constants import MCU2BOOTLOADER
 
 COMMUNITY = Path('layouts/default/')
 TEMPLATE = Path('data/templates/keyboard/')
@@ -74,11 +74,7 @@ def replace_placeholders(src, dest, tokens):
     dest.write_text(content)
 
 
-def replace_string(src, token, value):
-    src.write_text(src.read_text().replace(token, value))
-
-
-def augment_community_info(config, src, dest):
+def augment_community_info(src, dest):
     """Splice in any additional data into info.json
     """
     info = json.loads(src.read_text())
@@ -86,7 +82,6 @@ def augment_community_info(config, src, dest):
 
     # merge community with template
     deep_update(info, template)
-    deep_update(info, config)
 
     # avoid assumptions on macro name by using the first available
     first_layout = next(iter(info["layouts"].values()))["layout"]
@@ -106,8 +101,8 @@ def augment_community_info(config, src, dest):
     for item in first_layout:
         item["matrix"] = [int(item["y"]), int(item["x"])]
 
-    # finally write out the updated json
-    dest.write_text(json.dumps(info, cls=InfoJSONEncoder, sort_keys=True))
+    # finally write out the updated info.json
+    dest.write_text(json.dumps(info, cls=InfoJSONEncoder))
 
 
 def _question(*args, **kwargs):
@@ -134,7 +129,7 @@ def _question(*args, **kwargs):
 def prompt_keyboard():
     prompt = """{fg_yellow}Name Your Keyboard Project{style_reset_all}
 For more infomation, see:
-https://docs.qmk.fm/hardware_keyboard_guidelines#naming-your-keyboard-project
+https://docs.qmk.fm/#/hardware_keyboard_guidelines?id=naming-your-keyboardproject
 
 Keyboard Name? """
 
@@ -213,24 +208,34 @@ def new_keyboard(cli):
     default_layout = cli.args.layout if cli.args.layout else prompt_layout()
     mcu = cli.args.type if cli.args.type else prompt_mcu()
 
-    config = {}
+    # Preprocess any development_board presets
     if mcu in dev_boards:
-        config['development_board'] = mcu
-    else:
-        config['processor'] = mcu
-        config['bootloader'] = select_default_bootloader(mcu)
+        defaults_map = json_load(Path('data/mappings/defaults.hjson'))
+        board = defaults_map['development_board'][mcu]
 
-    detach_layout = False
-    if default_layout == 'none of the above':
-        default_layout = "ortho_4x4"
-        detach_layout = True
+        mcu = board['processor']
+        bootloader = board['bootloader']
+    else:
+        bootloader = select_default_bootloader(mcu)
 
     tokens = {  # Comment here is to force multiline formatting
         'YEAR': str(date.today().year),
         'KEYBOARD': kb_name,
         'USER_NAME': user_name,
-        'REAL_NAME': real_name
+        'REAL_NAME': real_name,
+        'LAYOUT': default_layout,
+        'MCU': mcu,
+        'BOOTLOADER': bootloader
     }
+
+    if cli.config.general.verbose:
+        cli.log.info("Creating keyboard with:")
+        for key, value in tokens.items():
+            cli.echo(f"    {key.ljust(10)}:   {value}")
+
+    # TODO: detach community layout and rename to just "LAYOUT"
+    if default_layout == 'none of the above':
+        default_layout = "ortho_4x4"
 
     # begin with making the deepest folder in the tree
     keymaps_path = keyboard(kb_name) / 'keymaps/'
@@ -246,14 +251,9 @@ def new_keyboard(cli):
 
     # merge in infos
     community_info = Path(COMMUNITY / f'{default_layout}/info.json')
-    augment_community_info(config, community_info, keyboard(kb_name) / 'keyboard.json')
-
-    # detach community layout and rename to just "LAYOUT"
-    if detach_layout:
-        replace_string(keyboard(kb_name) / 'keyboard.json', 'LAYOUT_ortho_4x4', 'LAYOUT')
-        replace_string(keymaps_path / 'default/keymap.c', 'LAYOUT_ortho_4x4', 'LAYOUT')
+    augment_community_info(community_info, keyboard(kb_name) / community_info.name)
 
     cli.log.info(f'{{fg_green}}Created a new keyboard called {{fg_cyan}}{kb_name}{{fg_green}}.{{fg_reset}}')
-    cli.log.info(f"Build Command: {{fg_yellow}}qmk compile -kb {kb_name} -km default{{fg_reset}}.")
-    cli.log.info(f'Project Location: {{fg_cyan}}{QMK_FIRMWARE}/{keyboard(kb_name)}{{fg_reset}}.')
-    cli.log.info("{fg_yellow}Now update the config files to match the hardware!{fg_reset}")
+    cli.log.info(f'To start working on things, `cd` into {{fg_cyan}}keyboards/{kb_name}{{fg_reset}},')
+    cli.log.info('or open the directory in your preferred text editor.')
+    cli.log.info(f"And build with {{fg_yellow}}qmk compile -kb {kb_name} -km default{{fg_reset}}.")

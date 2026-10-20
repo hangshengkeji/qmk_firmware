@@ -19,8 +19,9 @@ After pressing a key, it immediately changes state, and sets a counter.
 No further inputs are accepted until DEBOUNCE milliseconds have occurred.
 */
 
-#include "debounce.h"
+#include "matrix.h"
 #include "timer.h"
+#include "quantum.h"
 #include <stdlib.h>
 
 #ifdef PROTOCOL_CHIBIOS
@@ -48,10 +49,6 @@ static debounce_counter_t *debounce_counters;
 static fast_timer_t        last_time;
 static bool                counters_need_update;
 static bool                cooked_changed;
-
-#ifdef HS_DEBOUNCE
-extern uint16_t hs_deb;
-#endif
 
 #    define DEBOUNCE_ELAPSED 0
 
@@ -122,32 +119,20 @@ static void update_debounce_counters(uint8_t num_rows, uint8_t elapsed_time) {
 
 // upload from raw_matrix to final matrix;
 static void transfer_matrix_values(matrix_row_t raw[], matrix_row_t cooked[], uint8_t num_rows) {
-    matrix_need_update                   = false;
     debounce_counter_t *debounce_pointer = debounce_counters;
     for (uint8_t row = 0; row < num_rows; row++) {
         matrix_row_t existing_row = cooked[row];
         matrix_row_t raw_row      = raw[row];
 
         // determine new value basd on debounce pointer + raw value
-#ifdef HS_DEBOUNCE
-        if (existing_row != raw_row) {
-            if (*debounce_pointer == DEBOUNCE_ELAPSED) {
-                *debounce_pointer = hs_deb;
-                cooked_changed |= cooked[row] ^ raw_row;
-                cooked[row]          = raw_row;
-                counters_need_update = true;
-            }
-        }
-#else
         if (existing_row != raw_row) {
             if (*debounce_pointer == DEBOUNCE_ELAPSED) {
                 *debounce_pointer = DEBOUNCE;
-                cooked_changed |= cooked[row] ^ raw_row;
-                cooked[row]          = raw_row;
+                cooked[row]       = raw_row;
+                cooked_changed |= cooked[row] ^ raw[row];
                 counters_need_update = true;
             }
         }
-#endif
         debounce_pointer++;
     }
 }

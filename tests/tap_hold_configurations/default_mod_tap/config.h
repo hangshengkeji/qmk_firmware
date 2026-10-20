@@ -17,3 +17,5 @@
 #pragma once
 
 #include "test_common.h"
+
+#define IGNORE_MOD_TAP_INTERRUPT

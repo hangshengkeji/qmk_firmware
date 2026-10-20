@@ -2,18 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ws2812.h"
-
-// Keep this exact include order otherwise we run into naming conflicts between
-// pico-sdk and rp2040.h which we don't control.
 #include "hardware/timer.h"
 #include "hardware/clocks.h"
-#include <hal.h>
+// Keep this exact include order otherwise we run into naming conflicts between
+// pico-sdk and rp2040.h which we don't control.
+#include "quantum.h"
 #include "hardware/pio.h"
-
-#include "gpio.h"
-#include "debug.h"
-#include "wait.h"
-#include "util.h"
 
 #if !defined(MCU_RP)
 #    error PIO Driver is only available for Raspberry Pi 2040 MCUs!
@@ -136,7 +130,7 @@ static const pio_program_t ws2812_program = {
 };
 
 static uint32_t                WS2812_BUFFER[WS2812_LED_COUNT];
-static const rp_dma_channel_t* dma_channel;
+static const rp_dma_channel_t* WS2812_DMA_CHANNEL;
 static uint32_t                RP_DMA_MODE_WS2812;
 static int                     STATE_MACHINE = -1;
 
@@ -161,7 +155,7 @@ static void ws2812_dma_callback(void* p, uint32_t ct) {
     // FIFO is already empty.
     rtcnt_t time_to_completion = (pio_sm_get_tx_fifo_level(pio, STATE_MACHINE) + 1) * MAX(WS2812_T1H + WS2812_T1L, WS2812_T0H + WS2812_T0L);
 
-#if defined(WS2812_RGBW)
+#if defined(RGBW)
     time_to_completion *= 32;
 #else
     time_to_completion *= 24;
@@ -177,7 +171,7 @@ static void ws2812_dma_callback(void* p, uint32_t ct) {
     osalSysUnlockFromISR();
 }
 
-void ws2812_init(void) {
+bool ws2812_init(void) {
     uint pio_idx = pio_get_index(pio);
     /* Get PIOx peripheral out of reset state. */
     hal_lld_peripheral_unreset(pio_idx == 0 ? RESETS_ALLREG_PIO0 : RESETS_ALLREG_PIO1);
@@ -191,21 +185,21 @@ void ws2812_init(void) {
                             (pio_idx == 0 ? PAL_MODE_ALTERNATE_PIO0 : PAL_MODE_ALTERNATE_PIO1);
     // clang-format on
 
-    palSetLineMode(WS2812_DI_PIN, rgb_pin_mode);
+    palSetLineMode(RGB_DI_PIN, rgb_pin_mode);
 
     STATE_MACHINE = pio_claim_unused_sm(pio, true);
     if (STATE_MACHINE < 0) {
         dprintln("ERROR: Failed to acquire state machine for WS2812 output!");
-        return;
+        return false;
     }
 
     uint offset = pio_add_program(pio, &ws2812_program);
 
-    pio_sm_set_consecutive_pindirs(pio, STATE_MACHINE, WS2812_DI_PIN, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, STATE_MACHINE, RGB_DI_PIN, 1, true);
 
     pio_sm_config config = pio_get_default_sm_config();
     sm_config_set_wrap(&config, offset + WS2812_WRAP_TARGET, offset + WS2812_WRAP);
-    sm_config_set_sideset_pins(&config, WS2812_DI_PIN);
+    sm_config_set_sideset_pins(&config, RGB_DI_PIN);
     sm_config_set_fifo_join(&config, PIO_FIFO_JOIN_TX);
 
 #if defined(WS2812_EXTERNAL_PULLUP)
@@ -222,7 +216,7 @@ void ws2812_init(void) {
     sm_config_set_sideset(&config, 1, false, false);
 #endif
 
-#if defined(WS2812_RGBW)
+#if defined(RGBW)
     sm_config_set_out_shift(&config, false, true, 32);
 #else
     sm_config_set_out_shift(&config, false, true, 24);
@@ -236,9 +230,9 @@ void ws2812_init(void) {
     pio_sm_init(pio, STATE_MACHINE, offset, &config);
     pio_sm_set_enabled(pio, STATE_MACHINE, true);
 
-    dma_channel = dmaChannelAlloc(RP_DMA_CHANNEL_ID_ANY, RP_DMA_PRIORITY_WS2812, (rp_dmaisr_t)ws2812_dma_callback, NULL);
-    dmaChannelEnableInterruptX(dma_channel);
-    dmaChannelSetDestinationX(dma_channel, (uint32_t)&pio->txf[STATE_MACHINE]);
+    WS2812_DMA_CHANNEL = dmaChannelAlloc(RP_DMA_CHANNEL_ID_ANY, RP_DMA_PRIORITY_WS2812, (rp_dmaisr_t)ws2812_dma_callback, NULL);
+    dmaChannelEnableInterruptX(WS2812_DMA_CHANNEL);
+    dmaChannelSetDestinationX(WS2812_DMA_CHANNEL, (uint32_t)&pio->txf[STATE_MACHINE]);
 
     // clang-format off
     RP_DMA_MODE_WS2812 = DMA_CTRL_TRIG_INCR_READ |
@@ -246,6 +240,8 @@ void ws2812_init(void) {
                          DMA_CTRL_TRIG_TREQ_SEL(pio == pio0 ? STATE_MACHINE : STATE_MACHINE + 8) |
                          DMA_CTRL_TRIG_PRIORITY(RP_DMA_PRIORITY_WS2812);
     // clang-format on
+
+    return true;
 }
 
 static inline void sync_ws2812_transfer(void) {
@@ -254,7 +250,7 @@ static inline void sync_ws2812_transfer(void) {
         // count of LEDs in milliseconds. This is safely much longer than it
         // would take to push all the data out.
         dprintln("ERROR: WS2812 DMA transfer has stalled, aborting!");
-        dmaChannelDisableX(dma_channel);
+        dmaChannelDisableX(WS2812_DMA_CHANNEL);
         pio_sm_clear_fifos(pio, STATE_MACHINE);
         pio_sm_restart(pio, STATE_MACHINE);
         chSemReset(&TRANSFER_COUNTER, 0);
@@ -266,19 +262,24 @@ static inline void sync_ws2812_transfer(void) {
     busy_wait_until(LAST_TRANSFER);
 }
 
-void ws2812_setleds(rgb_led_t* ledarray, uint16_t leds) {
+void ws2812_setleds(LED_TYPE* ledarray, uint16_t leds) {
+    static bool is_initialized = false;
+    if (unlikely(!is_initialized)) {
+        is_initialized = ws2812_init();
+    }
+
     sync_ws2812_transfer();
 
     for (int i = 0; i < leds; i++) {
-#if defined(WS2812_RGBW)
+#if defined(RGBW)
         WS2812_BUFFER[i] = rgbw8888_to_u32(ledarray[i].r, ledarray[i].g, ledarray[i].b, ledarray[i].w);
 #else
         WS2812_BUFFER[i] = rgbw8888_to_u32(ledarray[i].r, ledarray[i].g, ledarray[i].b, 0);
 #endif
     }
 
-    dmaChannelSetSourceX(dma_channel, (uint32_t)WS2812_BUFFER);
-    dmaChannelSetCounterX(dma_channel, leds);
-    dmaChannelSetModeX(dma_channel, RP_DMA_MODE_WS2812);
-    dmaChannelEnableX(dma_channel);
+    dmaChannelSetSourceX(WS2812_DMA_CHANNEL, (uint32_t)WS2812_BUFFER);
+    dmaChannelSetCounterX(WS2812_DMA_CHANNEL, leds);
+    dmaChannelSetModeX(WS2812_DMA_CHANNEL, RP_DMA_MODE_WS2812);
+    dmaChannelEnableX(WS2812_DMA_CHANNEL);
 }
